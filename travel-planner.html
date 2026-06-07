@@ -3,11 +3,14 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Seyahat Rota Planlayıcı</title>
+<title>RouteLog — Trip Planner</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://www.gstatic.com/firebasejs/12.14.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/12.14.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/12.14.0/firebase-firestore-compat.js"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{--bg:#f5f3ee;--surface:#fff;--surface2:#f0ede6;--border:#e2ddd5;--border2:#ccc8be;--text:#1a1916;--text2:#6b6760;--text3:#9e9a93;--accent:#2563eb;--accent-light:#eff4ff;--green:#16a34a;--green-light:#f0fdf4;--amber:#d97706;--amber-light:#fffbeb;--red:#dc2626;--red-light:#fef2f2;--purple:#7c3aed;--purple-light:#f5f3ff;--teal:#0d9488;--teal-light:#f0fdfa;--radius:10px;--radius-sm:6px;--shadow:0 1px 3px rgba(0,0,0,.08),0 1px 2px rgba(0,0,0,.04);--shadow-lg:0 10px 25px rgba(0,0,0,.1),0 4px 10px rgba(0,0,0,.05)}
@@ -131,27 +134,33 @@ textarea{resize:vertical;min-height:56px}
 <div class="logo-icon">✈</div>
 <div>
 <div class="logo-text">RouteLog</div>
-<div class="logo-sub">Seyahat Rota Planlayıcı</div>
+<div class="logo-sub" id="appSubtitle">Seyahat Rota Planlayıcı</div>
 </div>
 </div>
 <div class="header-right">
-<button class="btn btn-sm" onclick="exportData()">⬇ Dışa Aktar</button>
-<button class="btn btn-sm" onclick="document.getElementById('importFile').click()">⬆ İçe Aktar</button>
+<div id="userArea" style="display:none;align-items:center;gap:6px">
+<img id="userAvatar" style="width:26px;height:26px;border-radius:50%">
+<span id="userName" style="font-size:12px;color:var(--text2)"></span>
+<button class="btn btn-sm btn-ghost" onclick="logout()" style="font-size:11px" id="logoutBtn">Çıkış</button>
+</div>
+<button class="btn btn-sm" id="loginBtn" onclick="login()">🚪 <span id="loginBtnLabel">Giriş</span></button>
+<button class="btn btn-sm" id="exportBtn" onclick="exportData()">⬇ <span id="exportBtnLabel">Dışa Aktar</span></button>
+<button class="btn btn-sm" id="importBtn" onclick="document.getElementById('importFile').click()">⬆ <span id="importBtnLabel">İçe Aktar</span></button>
 <input type="file" id="importFile" accept=".json" style="display:none" onchange="importData(event)">
-<button class="btn btn-sm btn-danger" onclick="confirmClearAll()">🗑 Tümünü Sil</button>
+<button class="btn btn-sm btn-danger" id="deleteAllBtn" onclick="confirmClearAll()">🗑 <span id="deleteAllBtnLabel">Tümünü Sil</span></button>
 </div>
 </header>
 <div class="layout">
 <div class="sidebar">
 <div class="sidebar-tabs">
-<div class="stab active" onclick="switchTab('trips')">🗺 Seyahatler</div>
-<div class="stab" onclick="switchTab('settings')">Ayarlar</div>
+<div class="stab active" onclick="switchTab('trips')">🗺 <span id="stabTrips">Seyahatler</span></div>
+<div class="stab" onclick="switchTab('settings')"><span id="stabSettings">Ayarlar</span></div>
 </div>
 <div class="sidebar-body">
 <div class="sidebar-section active" id="sec-trips">
 <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding-bottom:4px">
-<div class="section-title" style="margin-bottom:0">Seyahatlerim</div>
-<button class="btn btn-sm btn-primary" onclick="createNewTrip()">+ Yeni Seyahat</button>
+<div class="section-title" style="margin-bottom:0" id="myTripsTitle">Seyahatlerim</div>
+<button class="btn btn-sm btn-primary" onclick="createNewTrip()"><span id="newTripBtn">+ Yeni Seyahat</span></button>
 </div>
 <div id="tripsList"></div>
 </div>
@@ -165,30 +174,7 @@ textarea{resize:vertical;min-height:56px}
 <div id="addAttrSection"></div>
 </div>
 <div class="sidebar-section" id="sec-settings">
-<div class="form-group">
-<div class="section-title">Harita Stili</div>
-<select id="mapStyleSelect" onchange="changeMapStyle()">
-<option value="light">Açık</option>
-<option value="dark">Koyu</option>
-<option value="streets">Sokaklar</option>
-<option value="satellite">Uydu</option>
-</select>
-</div>
-<div class="form-group">
-<div class="section-title">Varsayılan Para Birimi</div>
-<select id="defaultCurrency" onchange="saveSettings()">
-<option value="€">€ EUR</option>
-<option value="₺">₺ TRY</option>
-<option value="$">$ USD</option>
-<option value="£">£ GBP</option>
-</select>
-</div>
-<div class="divider"></div>
-<div class="section-title">Veri Yönetimi</div>
-<button class="btn" style="width:100%;justify-content:center" onclick="exportData()">⬇ JSON Olarak Dışa Aktar</button>
-<button class="btn" style="width:100%;justify-content:center" onclick="document.getElementById('importFile').click()">⬆ JSON'dan İçe Aktar</button>
-<button class="btn btn-danger" style="width:100%;justify-content:center" onclick="confirmClearAll()">🗑 Tüm Verileri Sil</button>
-<div style="font-size:11px;color:var(--text3);line-height:1.7;padding:8px 0">Verileriniz tarayıcınızın localStorage'ında saklanır.<br>Dışa aktararak yedek alabilir, başka cihaza aktarabilirsiniz.</div>
+<div id="settingsContent"></div>
 </div>
 </div>
 <div class="total-bar">
@@ -204,67 +190,67 @@ textarea{resize:vertical;min-height:56px}
 </div>
 <div class="modal-backdrop" id="newTripModal">
 <div class="modal" style="max-width:380px">
-<div class="modal-header"><div class="modal-title">Yeni Seyahat</div><button class="modal-close" onclick="cm('newTripModal')">✕</button></div>
+<div class="modal-header"><div class="modal-title"><span id="newTripModalTitle">Yeni Seyahat</span></div><button class="modal-close" onclick="cm('newTripModal')">✕</button></div>
 <div class="form-group">
-<label class="form-label">Seyahat Adı</label>
-<input type="text" id="newTripTitle" placeholder="2026 Avrupa Tatili" onkeydown="if(event.key==='Enter')confirmNewTrip()">
+<label class="form-label" id="newTripLabel">Seyahat Adı</label>
+<input type="text" id="newTripTitle" onkeydown="if(event.key==='Enter')confirmNewTrip()">
 </div>
 <div class="modal-footer">
-<button class="btn" onclick="cm('newTripModal')">İptal</button>
-<button class="btn btn-primary" onclick="confirmNewTrip()">Oluştur</button>
+<button class="btn" onclick="cm('newTripModal')"><span id="newTripCancel">İptal</span></button>
+<button class="btn btn-primary" onclick="confirmNewTrip()"><span id="newTripCreate">Oluştur</span></button>
 </div>
 </div>
 </div>
 <div class="modal-backdrop" id="editTripModal">
 <div class="modal" style="max-width:380px">
-<div class="modal-header"><div class="modal-title">Seyahat Adını Düzenle</div><button class="modal-close" onclick="cm('editTripModal')">✕</button></div>
+<div class="modal-header"><div class="modal-title"><span id="editTripModalTitle">Seyahat Adını Düzenle</span></div><button class="modal-close" onclick="cm('editTripModal')">✕</button></div>
 <div class="form-group">
-<label class="form-label">Seyahat Adı</label>
+<label class="form-label" id="editTripLabel">Seyahat Adı</label>
 <input type="text" id="editTripTitleInput" onkeydown="if(event.key==='Enter')confirmEditTrip()">
 </div>
 <div class="modal-footer">
-<button class="btn" onclick="cm('editTripModal')">İptal</button>
-<button class="btn btn-primary" onclick="confirmEditTrip()">Kaydet</button>
+<button class="btn" onclick="cm('editTripModal')"><span id="editTripCancel">İptal</span></button>
+<button class="btn btn-primary" onclick="confirmEditTrip()"><span id="editTripSave">Kaydet</span></button>
 </div>
 </div>
 </div>
 <div class="modal-backdrop" id="editSegModal">
 <div class="modal">
-<div class="modal-header"><div class="modal-title">Segmenti Düzenle</div><button class="modal-close" onclick="cm('editSegModal')">✕</button></div>
+<div class="modal-header"><div class="modal-title"><span id="editSegModalTitle">Segmenti Düzenle</span></div><button class="modal-close" onclick="cm('editSegModal')">✕</button></div>
 <div id="editSegFormBody"></div>
 <div class="modal-footer">
-<button class="btn" onclick="cm('editSegModal')">İptal</button>
-<button class="btn btn-primary" onclick="confirmEditSeg()">Kaydet</button>
+<button class="btn" onclick="cm('editSegModal')"><span id="editSegCancel">İptal</span></button>
+<button class="btn btn-primary" onclick="confirmEditSeg()"><span id="editSegSave">Kaydet</span></button>
 </div>
 </div>
 </div>
 <div class="modal-backdrop" id="editStayModal">
 <div class="modal">
-<div class="modal-header"><div class="modal-title">Konaklamayı Düzenle</div><button class="modal-close" onclick="cm('editStayModal')">✕</button></div>
+<div class="modal-header"><div class="modal-title"><span id="editStayModalTitle">Konaklamayı Düzenle</span></div><button class="modal-close" onclick="cm('editStayModal')">✕</button></div>
 <div id="editStayFormBody"></div>
 <div class="modal-footer">
-<button class="btn" onclick="cm('editStayModal')">İptal</button>
-<button class="btn btn-primary" onclick="confirmEditStay()">Kaydet</button>
+<button class="btn" onclick="cm('editStayModal')"><span id="editStayCancel">İptal</span></button>
+<button class="btn btn-primary" onclick="confirmEditStay()"><span id="editStaySave">Kaydet</span></button>
 </div>
 </div>
 </div>
 <div class="modal-backdrop" id="editAttrModal">
 <div class="modal">
-<div class="modal-header"><div class="modal-title">Mekanı Düzenle</div><button class="modal-close" onclick="cm('editAttrModal')">✕</button></div>
+<div class="modal-header"><div class="modal-title"><span id="editAttrModalTitle">Mekanı Düzenle</span></div><button class="modal-close" onclick="cm('editAttrModal')">✕</button></div>
 <div id="editAttrFormBody"></div>
 <div class="modal-footer">
-<button class="btn" onclick="cm('editAttrModal')">İptal</button>
-<button class="btn btn-primary" onclick="confirmEditAttr()">Kaydet</button>
+<button class="btn" onclick="cm('editAttrModal')"><span id="editAttrCancel">İptal</span></button>
+<button class="btn btn-primary" onclick="confirmEditAttr()"><span id="editAttrSave">Kaydet</span></button>
 </div>
 </div>
 </div>
 <div class="modal-backdrop" id="deleteModal">
 <div class="modal" style="max-width:360px">
-<div class="modal-header"><div class="modal-title" id="deleteModalTitle">Sil?</div><button class="modal-close" onclick="cm('deleteModal')">✕</button></div>
-<p style="font-size:13px;color:var(--text2);line-height:1.6" id="deleteModalMsg">Bu işlem geri alınamaz.</p>
+<div class="modal-header"><div class="modal-title" id="deleteModalTitle"></div><button class="modal-close" onclick="cm('deleteModal')">✕</button></div>
+<p style="font-size:13px;color:var(--text2);line-height:1.6" id="deleteModalMsg"></p>
 <div class="modal-footer">
-<button class="btn" onclick="cm('deleteModal')">İptal</button>
-<button class="btn btn-danger" id="deleteConfirmBtn">Sil</button>
+<button class="btn" onclick="cm('deleteModal')"><span id="deleteCancel">İptal</span></button>
+<button class="btn btn-danger" id="deleteConfirmBtn"><span id="deleteConfirmLabel">Sil</span></button>
 </div>
 </div>
 </div>
@@ -272,10 +258,12 @@ textarea{resize:vertical;min-height:56px}
 <script>
 // ─── STATE ───────────────────────────────────────────────────────────────────
 let trips = [];let clipboard = null;let dragIdx = null;let labelMode = 'hover';
-let settings = { defaultCurrency: '€', mapStyle: 'light' };
+let settings = { defaultCurrency: '€', mapStyle: 'light', lang: 'tr' };
 let activeTripId = null;
 let editingTripId = null;
 let editingSegKey = null;
+let firebaseUser = null;
+let firestoreDB = null;
 let editingStayId = null;
 let editingAttrId = null;
 let addSegTransport = null;
@@ -303,6 +291,177 @@ const A = {
   gorulecek:{icon:'🏛️',label:'Görülecek',color:'#7c3aed',bg:'#f5f3ff'},
 };
 
+const LANG = {
+  tr: {
+    appTitle:'RouteLog',appSubtitle:'Seyahat Rota Planlayıcı',newTrip:'Yeni Seyahat',myTrips:'Seyahatlerim',
+    settings:'Ayarlar',login:'🚪 Giriş',logout:'Çıkış',exportBtn:'Dışa Aktar',importBtn:'İçe Aktar',deleteAll:'Tümünü Sil',
+    totalLabel:'Toplam',totalAllTrips:'Tüm Seyahatler Toplamı',totalVisible:'Görünür Seyahatler Toplamı',
+    tripTitle:'Seyahat Adı',create:'Oluştur',cancel:'İptal',save:'Kaydet',delete:'Sil',
+    editTripName:'Adı Düzenle',duplicate:'Kopyala',
+    transport:'Ulaşım',accommodation:'Konaklama',activities:'Aktiviteler',
+    addTransport:'+ Ulaşım Ekle',addAccommodation:'+ Konaklama Ekle',addActivity:'+ Mekan Ekle',
+    editSegment:'Segmenti Düzenle',editStay:'Konaklamayı Düzenle',editAttr:'Mekanı Düzenle',
+    departure:'Kalkış',arrival:'Varış',provider:'Sağlayıcı',price:'Fiyat',date:'Tarih',
+    duration:'Süre',passengers:'Kişi Sayısı',note:'Not',
+    hotelName:'Otel / Konaklama Adı',city:'Şehir',checkIn:'Giriş Tarihi',checkOut:'Çıkış Tarihi',
+    night:'gece',nights:'Gece Sayısı',totalPrice:'Toplam Fiyat',nightlyRate:'gecelik',
+    attrName:'Mekan Adı',time:'Saat',all:'Tümü',add:'Ekle',
+    segmentCount:'{n} segment',stayCount:'🏨 {n} konaklama',attrCount:'📍 {n} mekan',
+    person:'{n} kişi',mixed:'Karma',tripCount:'{n} seyahat',
+    noTransport:'Henüz ulaşım eklenmedi.',noStay:'Henüz konaklama eklenmedi.',noAttr:'Henüz mekan eklenmedi.',
+    noTrips:'Henüz seyahat eklenmedi.\nYeni bir seyahat oluşturun.',
+    deleteConfirmTitle:'Seyahati sil?',deleteConfirmMsg:'"{t}" seyahati ve tüm segmentleri/konaklamaları/mekanları silinecek.',
+    deleteSegConfirm:'"{f} → {t}" segmenti silinecek.',deleteStayConfirm:'"{n}" konaklaması silinecek.',
+    deleteAttrConfirm:'"{n}" mekanı silinecek.',
+    clearAllTitle:'Tüm verileri sil?',clearAllMsg:'Tüm seyahatler, segmentler, konaklamalar ve mekanlar silinecek.',
+    clearAllDone:'Tüm veriler silindi',
+    mapStyle:'Harita Stili',defaultCurrency:'Varsayılan Para Birimi',language:'Dil',
+    dataManagement:'Veri Yönetimi',exportJson:'JSON Olarak Dışa Aktar',importJson:"JSON'dan İçe Aktar",
+    dataInfo:'Verileriniz tarayıcınızda saklanır.\\nDışa aktararak yedek alabilir, başka cihaza aktarabilirsiniz.',
+    light:'Açık',dark:'Koyu',streets:'Sokaklar',satellite:'Uydu',
+    searchingCoords:'Koordinatlar aranıyor...',coordsUpdated:'Koordinatlar güncellendi ✓',coordsNotFound:'Koordinat bulunamadı. Şehir adını kontrol edin.',
+    tripCreated:'Seyahat oluşturuldu ✓',tripUpdated:'Seyahat adı güncellendi',tripDeleted:'Seyahat silindi',
+    segmentAdded:'Segment eklendi ✓',segmentUpdated:'Segment güncellendi ✓',segmentDeleted:'Segment silindi',
+    stayAdded:'Konaklama eklendi ✓',stayUpdated:'Konaklama güncellendi ✓',stayDeleted:'Konaklama silindi',
+    attrAdded:'Mekan eklendi ✓',attrUpdated:'Mekan güncellendi ✓',attrDeleted:'Mekan silindi',
+    orderChanged:'Sıra değiştirildi',allSet:'👥 Tümü {n} kişi olarak ayarlandı ✓',
+    copied:'kopyalandı 📄',noCopiedSeg:'Kopyalanmış segment yok',noCopiedStay:'Kopyalanmış konaklama yok',noCopiedAttr:'Kopyalanmış mekan yok',
+    openTripFirst:'Önce bir seyahat açın',segPasted:'Segment yapıştırıldı ✓',stayPasted:'Konaklama yapıştırıldı ✓',attrPasted:'Mekan yapıştırıldı ✓',
+    segCopied:'Segment kopyalandı 📄',stayCopied:'Konaklama kopyalandı 📄',attrCopied:'Mekan kopyalandı 📄',
+    exportDone:'Dışa aktarıldı ✓',importDone:'{n} seyahat içe aktarıldı ✓',settingsSaved:'Ayarlar kaydedildi',
+    nameRequired:'İsim girin!',cityRequired:'Şehir girin!',titleRequired:'Seyahat adı girin!',
+    selectType:'Ulaşım türü seçin!',selectCategory:'Kategori seçin!',validNumber:'Geçerli bir sayı girin (1-99)',
+    arrivalRequired:'Varış şehri zorunlu!',departureRequired:'Kalkış şehri gerekli!',
+    noCoords:'⚠ Koordinat yok',perPerson:'/ kişi',total:'toplam',transportCost:'(ulaşım)',stayCost:'(konaklama)',
+    setAllPassengers:'👥 Tümünü Ayarla',promptPassengers:'Tüm ulaşım ve konaklama için kişi sayısı:',
+    edit:'Düzenle',paste:'📥 Yapıştır',viewOnMap:'🔍 Haritada Gör',
+    labelModeHover:'Hover',labelModeZoom:'Zoom',labelToggleTitle:'Etiket modunu değiştir',
+    labelToastZoom:'Etiket: Zoom ≥ 8 göster',labelToastHover:"Etiket: Hover'da göster",
+    newTripPlaceholder:'2026 Avrupa Tatili',tripTotal:'{name} Toplamı',importNoFile:'Dosya okunamadı!',
+    migrated:'Eski rotalar içe aktarıldı ✓',error:'Hata: ',coordsUpdating:'Koordinatlar güncelleniyor...',
+    tripDuplicated:'Seyahat kopyalandı ✓',tripOpen:'Seyahat',importSegs:'{n} segment içe aktarıldı ✓',
+    loginToast:'Giriş yapıldı ✓',logoutToast:'Çıkış yapıldı',
+    tp_ucak:'Uçuş',tp_tren:'Tren',tp_otobus:'Otobüs',tp_araba:'Araba',tp_taksi:'Taksi',
+    tp_feribot:'Feribot',tp_metro:'Metro',tp_tramvay:'Tramvay',tp_yaya:'Yaya',tp_bisiklet:'Bisiklet',
+    tp_scooter:'Scooter',tp_diger:'Diğer',
+    cat_gezilecek:'Gezilecek',cat_yemek:'Yemek',cat_gorulecek:'Görülecek',
+  },
+  en: {
+    appTitle:'RouteLog',appSubtitle:'Trip Planner',newTrip:'New Trip',myTrips:'My Trips',
+    settings:'Settings',login:'🚪 Login',logout:'Logout',exportBtn:'Export',importBtn:'Import',deleteAll:'Delete All',
+    totalLabel:'Total',totalAllTrips:'All Trips Total',totalVisible:'Visible Trips Total',
+    tripTitle:'Trip Name',create:'Create',cancel:'Cancel',save:'Save',delete:'Delete',
+    editTripName:'Edit Name',duplicate:'Duplicate',
+    transport:'Transport',accommodation:'Accommodation',activities:'Activities',
+    addTransport:'+ Add Transport',addAccommodation:'+ Add Accommodation',addActivity:'+ Add Activity',
+    editSegment:'Edit Segment',editStay:'Edit Stay',editAttr:'Edit Place',
+    departure:'Departure',arrival:'Arrival',provider:'Provider',price:'Price',date:'Date',
+    duration:'Duration',passengers:'Passengers',note:'Note',
+    hotelName:'Hotel / Accommodation Name',city:'City',
+    checkIn:'Check-in',checkOut:'Check-out',nights:'Nights',totalPrice:'Total Price',
+    night:' night',nights:'Nights',totalPrice:'Total Price',nightlyRate:'/ night',
+    attrName:'Place Name',time:'Time',all:'All',add:'Add',
+    segmentCount:'{n} seg',stayCount:'🏨 {n} stay',attrCount:'📍 {n} place',
+    person:'{n} pers',mixed:'Mixed',tripCount:'{n} trip',
+    noTransport:'No transport added.',noStay:'No accommodation added.',noAttr:'No places added.',
+    noTrips:'No trips yet.\nCreate a new trip.',
+    deleteConfirmTitle:'Delete trip?',deleteConfirmMsg:'"{t}" and all segments/places will be deleted.',
+    deleteSegConfirm:'"{f} → {t}" will be deleted.',deleteStayConfirm:'"{n}" will be deleted.',
+    deleteAttrConfirm:'"{n}" will be deleted.',
+    clearAllTitle:'Delete all data?',clearAllMsg:'All trips, segments, stays, places will be deleted.',
+    clearAllDone:'All data deleted',
+    mapStyle:'Map Style',defaultCurrency:'Default Currency',language:'Language',
+    dataManagement:'Data Management',exportJson:'Export as JSON',importJson:'Import from JSON',
+    dataInfo:'Data stored in your browser.\\nExport to backup or transfer to another device.',
+    light:'Light',dark:'Dark',streets:'Streets',satellite:'Satellite',
+    searchingCoords:'Searching coords...',coordsUpdated:'Coords updated ✓',coordsNotFound:'Coords not found. Check city name.',
+    tripCreated:'Trip created ✓',tripUpdated:'Trip name updated',tripDeleted:'Trip deleted',
+    segmentAdded:'Segment added ✓',segmentUpdated:'Segment updated ✓',segmentDeleted:'Segment deleted',
+    stayAdded:'Stay added ✓',stayUpdated:'Stay updated ✓',stayDeleted:'Stay deleted',
+    attrAdded:'Place added ✓',attrUpdated:'Place updated ✓',attrDeleted:'Place deleted',
+    orderChanged:'Order changed',allSet:'👥 All set to {n} ✓',
+    copied:'copied 📄',noCopiedSeg:'No copied segment',noCopiedStay:'No copied stay',noCopiedAttr:'No copied place',
+    openTripFirst:'Open a trip first',segPasted:'Segment pasted ✓',stayPasted:'Stay pasted ✓',attrPasted:'Place pasted ✓',
+    segCopied:'Segment copied 📄',stayCopied:'Stay copied 📄',attrCopied:'Place copied 📄',
+    exportDone:'Exported ✓',importDone:'{n} trip(s) imported ✓',settingsSaved:'Settings saved',
+    nameRequired:'Enter name!',cityRequired:'Enter city!',titleRequired:'Enter trip name!',
+    selectType:'Select transport type!',selectCategory:'Select category!',validNumber:'Enter valid number (1-99)',
+    arrivalRequired:'Arrival city required!',departureRequired:'Departure city required!',
+    noCoords:'⚠ No coords',perPerson:'/ pers',total:'total',transportCost:'(transport)',stayCost:'(accommodation)',
+    setAllPassengers:'👥 Set All',promptPassengers:'Passenger count for all:',
+    edit:'Edit',paste:'📥 Paste',viewOnMap:'🔍 View on Map',
+    labelModeHover:'Hover',labelModeZoom:'Zoom',labelToggleTitle:'Toggle label mode',
+    labelToastZoom:'Labels: show at zoom ≥ 8',labelToastHover:'Labels: show on hover',
+    newTripPlaceholder:'2026 Europe Trip',tripTotal:'{name} Total',importNoFile:'Cannot read file!',
+    migrated:'Old routes imported ✓',error:'Error: ',coordsUpdating:'Updating coords...',
+    tripDuplicated:'Trip copied ✓',tripOpen:'Trip',importSegs:'{n} seg(s) imported ✓',
+    loginToast:'Logged in ✓',logoutToast:'Logged out',
+    tp_ucak:'Flight',tp_tren:'Train',tp_otobus:'Bus',tp_araba:'Car',tp_taksi:'Taxi',
+    tp_feribot:'Ferry',tp_metro:'Metro',tp_tramvay:'Tram',tp_yaya:'Walk',tp_bisiklet:'Bike',
+    tp_scooter:'Scooter',tp_diger:'Other',
+    cat_gezilecek:'Sights',cat_yemek:'Food',cat_gorulecek:'Must See',
+  },
+  de: {
+    appTitle:'RouteLog',appSubtitle:'Reiseplaner',newTrip:'Neue Reise',myTrips:'Meine Reisen',
+    settings:'Einstellungen',login:'🚪 Login',logout:'Logout',exportBtn:'Exportieren',importBtn:'Importieren',deleteAll:'Alle löschen',
+    totalLabel:'Gesamt',totalAllTrips:'Alle Reisen Gesamt',totalVisible:'Sichtbare Reisen Gesamt',
+    tripTitle:'Reisename',create:'Erstellen',cancel:'Abbrechen',save:'Speichern',delete:'Löschen',
+    editTripName:'Name bearbeiten',duplicate:'Duplizieren',
+    transport:'Transport',accommodation:'Unterkunft',activities:'Aktivitäten',
+    addTransport:'+ Transport hinzufügen',addAccommodation:'+ Unterkunft hinzufügen',addActivity:'+ Ort hinzufügen',
+    editSegment:'Segment bearbeiten',editStay:'Unterkunft bearbeiten',editAttr:'Ort bearbeiten',
+    departure:'Abfahrt',arrival:'Ankunft',provider:'Anbieter',price:'Preis',date:'Datum',
+    duration:'Dauer',passengers:'Personen',note:'Notiz',
+    hotelName:'Hotel / Unterkunftsname',city:'Stadt',checkIn:'Check-in',checkOut:'Check-out',
+    night:' Nacht',nights:'Nächte',totalPrice:'Gesamtpreis',nightlyRate:'/ Nacht',
+    attrName:'Ortsname',time:'Uhrzeit',all:'Alle',add:'Hinzufügen',
+    segmentCount:'{n} Segment(e)',stayCount:'🏨 {n} Übernachtung(en)',attrCount:'📍 {n} Ort(e)',
+    person:'{n} Person(en)',mixed:'Gemischt',tripCount:'{n} Reise(n)',
+    noTransport:'Kein Transport hinzugefügt.',noStay:'Keine Unterkunft hinzugefügt.',noAttr:'Keine Orte hinzugefügt.',
+    noTrips:'Keine Reisen.\nErstelle eine neue Reise.',
+    deleteConfirmTitle:'Reise löschen?',deleteConfirmMsg:'"{t}" und alle Segmente/Orte werden gelöscht.',
+    deleteSegConfirm:'"{f} → {t}" wird gelöscht.',deleteStayConfirm:'"{n}" wird gelöscht.',
+    deleteAttrConfirm:'"{n}" wird gelöscht.',
+    clearAllTitle:'Alle Daten löschen?',clearAllMsg:'Alle Reisen, Segmente, Unterkünfte, Orte werden gelöscht.',
+    clearAllDone:'Alle Daten gelöscht',
+    mapStyle:'Kartenstil',defaultCurrency:'Standardwährung',language:'Sprache',
+    dataManagement:'Datenverwaltung',exportJson:'Als JSON exportieren',importJson:'Von JSON importieren',
+    dataInfo:'Daten im Browser gespeichert.\\nExportieren als Backup oder auf anderes Gerät.',
+    light:'Hell',dark:'Dunkel',streets:'Straßen',satellite:'Satellit',
+    searchingCoords:'Suche Koordinaten...',coordsUpdated:'Koordinaten aktualisiert ✓',coordsNotFound:'Koord. nicht gefunden. Stadt prüfen.',
+    tripCreated:'Reise erstellt ✓',tripUpdated:'Reisename aktualisiert',tripDeleted:'Reise gelöscht',
+    segmentAdded:'Segment hinzugefügt ✓',segmentUpdated:'Segment aktualisiert ✓',segmentDeleted:'Segment gelöscht',
+    stayAdded:'Unterkunft hinzugefügt ✓',stayUpdated:'Unterkunft aktualisiert ✓',stayDeleted:'Unterkunft gelöscht',
+    attrAdded:'Ort hinzugefügt ✓',attrUpdated:'Ort aktualisiert ✓',attrDeleted:'Ort gelöscht',
+    orderChanged:'Reihenfolge geändert',allSet:'👥 Alle auf {n} gesetzt ✓',
+    copied:'kopiert 📄',noCopiedSeg:'Kein kopiertes Segment',noCopiedStay:'Keine kopierte Unterkunft',noCopiedAttr:'Kein kopierter Ort',
+    openTripFirst:'Öffne zuerst eine Reise',segPasted:'Segment eingefügt ✓',stayPasted:'Unterkunft eingefügt ✓',attrPasted:'Ort eingefügt ✓',
+    segCopied:'Segment kopiert 📄',stayCopied:'Unterkunft kopiert 📄',attrCopied:'Ort kopiert 📄',
+    exportDone:'Exportiert ✓',importDone:'{n} Reise(n) importiert ✓',settingsSaved:'Einstellungen gespeichert',
+    nameRequired:'Name eingeben!',cityRequired:'Stadt eingeben!',titleRequired:'Reisenamen eingeben!',
+    selectType:'Transporttyp wählen!',selectCategory:'Kategorie wählen!',validNumber:'Gültige Zahl (1-99)',
+    arrivalRequired:'Ankunftsort erforderlich!',departureRequired:'Abfahrtsort erforderlich!',
+    noCoords:'⚠ Keine Koord.',perPerson:'/ Pers',total:'gesamt',transportCost:'(Transport)',stayCost:'(Unterkunft)',
+    setAllPassengers:'👥 Alle setzen',promptPassengers:'Personenanzahl für alle:',
+    edit:'Bearbeiten',paste:'📥 Einfügen',viewOnMap:'🔍 Auf Karte anzeigen',
+    labelModeHover:'Hover',labelModeZoom:'Zoom',labelToggleTitle:'Etikettenmodus wechseln',
+    labelToastZoom:'Etiketten: bei Zoom ≥ 8',labelToastHover:'Etiketten: bei Hover',
+    newTripPlaceholder:'2026 Europa Reise',tripTotal:'{name} Gesamt',importNoFile:'Datei lesefehler!',
+    migrated:'Alte Routen importiert ✓',error:'Fehler: ',coordsUpdating:'Aktualisiere Koordinaten...',
+    tripDuplicated:'Reise kopiert ✓',tripOpen:'Reise',importSegs:'{n} Segment(e) importiert ✓',
+    loginToast:'Angemeldet ✓',logoutToast:'Abgemeldet',
+    tp_ucak:'Flug',tp_tren:'Zug',tp_otobus:'Bus',tp_araba:'Auto',tp_taksi:'Taxi',
+    tp_feribot:'Fähre',tp_metro:'U-Bahn',tp_tramvay:'Straßenbahn',tp_yaya:'Zu Fuß',tp_bisiklet:'Fahrrad',
+    tp_scooter:'Roller',tp_diger:'Andere',
+    cat_gezilecek:'Sehenswürdigkeiten',cat_yemek:'Essen',cat_gorulecek:'Sehenswert',
+  }
+};
+const _t = (k, p) => {
+  const s = (LANG[settings.lang]||LANG.en)[k]||k;
+  if(!p) return s;
+  return Object.entries(p).reduce((r,[key,v])=>r.replace(new RegExp('\\{'+key+'\\}','g'),v), s);
+};
+
 const TILES = {
   light:'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
   dark:'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
@@ -312,7 +471,8 @@ const TILES = {
 
 // ─── HELPERS ─────────────────────────────────────────────────────────────────
 function esc(s){if(!s)return '';return s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39'})[c]||c)}
-function fd(iso){try{return new Date(iso).toLocaleDateString('tr-TR',{day:'numeric',month:'short',year:'numeric'})}catch{return iso}}
+function fd(iso){try{return new Date(iso).toLocaleDateString(_l(),{day:'numeric',month:'short',year:'numeric'})}catch{return iso}}
+const _l=_=>({'tr':'tr-TR','en':'en-US','de':'de-DE'}[settings.lang]||'tr-TR');
 function cm(id){document.getElementById(id).classList.remove('open')}
 let _tt;function toast(m){const e=document.getElementById('toast');e.textContent=m;e.classList.add('show');clearTimeout(_tt);_tt=setTimeout(()=>e.classList.remove('show'),2500)}
 const p=v=>parseFloat((v||'').replace(',','.'))||0
@@ -320,21 +480,100 @@ function segCost(s){return p(s.price)*(s.passengers||1)}
 function stayCost(s){return p(s.price)}
 function allSegs(t){const r=[];(t.segments||[]).forEach(s=>r.push(s));(t.stays||[]).forEach(s=>r.push({...s,type:'stay'}));return r}
 
-// ─── STORAGE ─────────────────────────────────────────────────────────────────
-function loadData(){const t=localStorage.getItem('routelog_trips');const s=localStorage.getItem('routelog_settings');if(t){trips=JSON.parse(t);trips.forEach(t=>{if(!t.stays)t.stays=[];if(!t.segments)t.segments=[];if(!t.attractions)t.attractions=[];if(t.visible===undefined)t.visible=true})}if(s)settings={...settings,...JSON.parse(s)}}
-function saveTrips(){localStorage.setItem('routelog_trips',JSON.stringify(trips))}
-function saveSettings(){settings.defaultCurrency=document.getElementById('defaultCurrency').value;localStorage.setItem('routelog_settings',JSON.stringify(settings));toast('Ayarlar kaydedildi')}
+// ─── FIREBASE ────────────────────────────────────────────────────────────────
+const firebaseConfig = {
+  apiKey: "REPLACED_API_KEY",
+  authDomain: "REPLACED_AUTH_DOMAIN",
+  projectId: "REPLACED_PROJECT_ID",
+  storageBucket: "REPLACED_PROJECT_ID.firebasestorage.app",
+  messagingSenderId: "REPLACED_SENDER_ID",
+  appId: "1:REPLACED_SENDER_ID:web:5c65bedb3bd2861533f418"
+};
+firebase.initializeApp(firebaseConfig);
+const fireAuth = firebase.auth();
+firestoreDB = firebase.firestore();
+
+function login(){
+  fireAuth.signInWithPopup(new firebase.auth.GoogleAuthProvider()).then(()=>toast(_t('loginToast'))).catch(e=>console.error(e));
+}
+function logout(){
+  document.getElementById('loginBtn').style.display='none';
+  syncToFirestore().then(()=>fireAuth.signOut()).then(()=>toast(_t('logoutToast')));
+}
+function onFirebaseAuth(user){
+  firebaseUser=user;
+  const loginBtn=document.getElementById('loginBtn');
+  const userArea=document.getElementById('userArea');
+  if(user){
+    loginBtn.style.display='none';
+    userArea.style.display='flex';
+    document.getElementById('userAvatar').src=user.photoURL||'';
+    document.getElementById('userName').textContent=user.displayName||user.email;
+    loadFromFirestore();
+  }else{
+    loginBtn.style.display='';
+    userArea.style.display='none';
+  }
+}
+async function loadFromFirestore(){
+  if(!firebaseUser)return;
+  try{
+    const d=await firestoreDB.collection('users').doc(firebaseUser.uid).get();
+    if(d.exists){
+      const data=d.data();
+      if(data.trips&&data.trips.length){
+        trips=data.trips;
+        trips.forEach(t=>{if(!t.stays)t.stays=[];if(!t.segments)t.segments=[];if(!t.attractions)t.attractions=[];if(t.visible===undefined)t.visible=true});
+        saveTrips();renderTrips();if(activeTripId)renderTripDetail();drawMap();
+      }
+    }else if(trips.length){
+      syncToFirestore();
+    }
+  }catch(e){console.error('Firestore load error',e)}
+}
+async function syncToFirestore(){
+  if(!firebaseUser)return;
+  try{
+    await firestoreDB.collection('users').doc(firebaseUser.uid).set({trips,settings});
+  }catch(e){console.error('Firestore sync error',e)}
+}
+
+fireAuth.onAuthStateChanged(onFirebaseAuth);
+
+// ─── INDEXED DB ─────────────────────────────────────────────────────────────
+let db = null;
+function openDB(){
+  return new Promise((res,rej)=>{
+    const r=indexedDB.open('RouteLogDB',1);
+    r.onupgradeneeded=e=>{const d=e.target.result;if(!d.objectStoreNames.contains('kv'))d.createObjectStore('kv')};
+    r.onsuccess=e=>res(e.target.result);
+    r.onerror=e=>rej(e.target.error);
+  });
+}
+function dbGet(k){return new Promise((res,rej)=>{const t=db.transaction('kv','readonly'),r=t.objectStore('kv').get(k);r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)})}
+function dbPut(k,v){return new Promise((res,rej)=>{const t=db.transaction('kv','readwrite'),r=t.objectStore('kv').put(v,k);r.onsuccess=()=>res();r.onerror=()=>rej(r.error)})}
+function dbDel(k){return new Promise((res,rej)=>{const t=db.transaction('kv','readwrite'),r=t.objectStore('kv').delete(k);r.onsuccess=()=>res();r.onerror=()=>rej(r.error)})}
+
+async function loadData(){
+  const t=await dbGet('trips');const s=await dbGet('settings');
+  if(t&&t.length){trips=t;trips.forEach(t=>{if(!t.stays)t.stays=[];if(!t.segments)t.segments=[];if(!t.attractions)t.attractions=[];if(t.visible===undefined)t.visible=true})}
+  else{const lt=localStorage.getItem('routelog_trips');if(lt){trips=JSON.parse(lt);trips.forEach(t=>{if(!t.stays)t.stays=[];if(!t.segments)t.segments=[];if(!t.attractions)t.attractions=[];if(t.visible===undefined)t.visible=true});dbPut('trips',trips)}}
+  if(s)settings={...settings,...s}
+  else{const ls=localStorage.getItem('routelog_settings');if(ls){settings={...settings,...JSON.parse(ls)};dbPut('settings',settings)}}
+}
+function saveTrips(){localStorage.setItem('routelog_trips',JSON.stringify(trips));dbPut('trips',trips);if(firebaseUser)syncToFirestore()}
+function saveSettings(){settings.defaultCurrency=document.getElementById('defaultCurrency').value;settings.lang=document.getElementById('langSelect').value;localStorage.setItem('routelog_settings',JSON.stringify(settings));dbPut('settings',settings);if(firebaseUser)syncToFirestore();toast(_t('settingsSaved'))}
 function migrateLegacyData(){const r=localStorage.getItem('routelog_routes');if(!r)return false;try{const routes=JSON.parse(r);if(!routes||!routes.length)return false;trips.push({id:'trip_'+Date.now(),title:'Seyahat #1',createdAt:new Date().toISOString(),visible:true,segments:routes.map((x,i)=>({...x,order:i,id:x.id||'seg_'+Date.now()+'_'+i,passengers:x.passengers||1})),stays:[],attractions:[]});saveTrips();localStorage.removeItem('routelog_routes');return true}catch{return false}}
 
 async function retrySegGeocode(tripId,segId){
   const trip=trips.find(t=>t.id===tripId);if(!trip)return;const seg=(trip.segments||[]).find(s=>s.id===segId);if(!seg)return;
-  toast('Koordinatlar aranıyor...');const[f,t]=await Promise.all([geocode(seg.from),geocode(seg.to)]);
-  if(f&&t){seg.fromLL=f;seg.toLL=t;saveTrips();renderTripDetail();drawMap();toast('Koordinatlar güncellendi ✓')}else{toast('Koordinat bulunamadı. Şehir adını kontrol edin.')}
+  toast(_t('searchingCoords'));const[f,t]=await Promise.all([geocode(seg.from),geocode(seg.to)]);
+  if(f&&t){seg.fromLL=f;seg.toLL=t;saveTrips();renderTripDetail();drawMap();toast(_t('coordsUpdated'))}else{toast(_t('coordsNotFound'))}
 }
 async function retryStayGeocode(tripId,stayId){
   const trip=trips.find(t=>t.id===tripId);if(!trip)return;const stay=(trip.stays||[]).find(s=>s.id===stayId);if(!stay)return;
-  toast('Koordinat aranıyor...');const ll=await geocode(stay.city);
-  if(ll){stay.cityLat=ll;saveTrips();renderTripDetail();drawMap();toast('Koordinat güncellendi ✓')}else{toast('Koordinat bulunamadı. Şehir adını kontrol edin.')}
+  toast(_t('searchingCoords'));const ll=await geocode(stay.city);
+  if(ll){stay.cityLat=ll;saveTrips();renderTripDetail();drawMap();toast(_t('coordsUpdated'))}else{toast(_t('coordsNotFound'))}
 }
 // ─── MAP ─────────────────────────────────────────────────────────────────────
 function initMap(){
@@ -344,13 +583,13 @@ function initMap(){
   const ctrl=L.control({position:'bottomleft'});
   ctrl.onAdd=()=>{
     const d=document.createElement('div');d.style.cssText='background:#fff;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,.15);padding:6px 10px;font-size:12px;font-family:"DM Sans",sans-serif;cursor:pointer;display:flex;align-items:center;gap:6px;user-select:none';
-    d.innerHTML='🏷️ <span id="labelModeText">Hover</span>';d.title='Etiket modunu değiştir';
-    d.onclick=()=>{labelMode=labelMode==='hover'?'zoom':'hover';document.getElementById('labelModeText').textContent=labelMode==='zoom'?'Zoom':'Hover';drawMap();toast('Etiket: '+(labelMode==='zoom'?'Zoom ≥ 8 göster':'Hover\'da göster'))};
+    d.innerHTML='🏷️ <span id="labelModeText">'+_t('labelModeHover')+'</span>';d.title=_t('labelToggleTitle');
+    d.onclick=()=>{labelMode=labelMode==='hover'?'zoom':'hover';document.getElementById('labelModeText').textContent=labelMode==='zoom'?_t('labelModeZoom'):_t('labelModeHover');drawMap();toast(labelMode==='zoom'?_t('labelToastZoom'):_t('labelToastHover'))};
     return d
   };ctrl.addTo(map);
 }
 function changeMapStyle(){settings.mapStyle=document.getElementById('mapStyleSelect').value;saveSettings();if(tileLayer)map.removeLayer(tileLayer);tileLayer=L.tileLayer(TILES[settings.mapStyle],{attribution:'© OpenStreetMap / CartoDB',maxZoom:19}).addTo(map)}
-async function geocode(city){const c=JSON.parse(localStorage.getItem('routelog_geocache')||'{}');if(c[city])return c[city];try{const r=await fetch('https://nominatim.openstreetmap.org/search?q='+encodeURIComponent(city)+'&format=json&limit=1');const d=await r.json();if(d&&d[0]){const ll=[parseFloat(d[0].lat),parseFloat(d[0].lon)];c[city]=ll;localStorage.setItem('routelog_geocache',JSON.stringify(c));return ll}}catch{}return null}
+async function geocode(city){let c=await dbGet('geocache');if(!c)c={};if(c[city])return c[city];try{const r=await fetch('https://nominatim.openstreetmap.org/search?q='+encodeURIComponent(city)+'&format=json&limit=1');const d=await r.json();if(d&&d[0]){const ll=[parseFloat(d[0].lat),parseFloat(d[0].lon)];c[city]=ll;dbPut('geocache',c);return ll}}catch{}return null}
 function drawMap(){
   try{map.invalidateSize()}catch{}
   Object.values(mapLayers).forEach(l=>{try{map.removeLayer(l)}catch{}});mapLayers={};const cm={};
@@ -377,7 +616,7 @@ function drawMap(){
       mapLayers['attr_'+s.tripId+'_'+s.id]=m;return;
     }
     const line=L.polyline([s.fromLL,s.toLL],{color:meta.color,weight:isActive?4:2,opacity:isActive?1:.3,dashArray:['ucak','feribot'].includes(s.type)?null:'7 5'}).addTo(map);
-    line.bindPopup('<div style="font-family:\'DM Sans\',sans-serif;font-size:13px;min-width:160px"><b style="font-size:14px;">'+esc(s.from)+' → '+esc(s.to)+'</b><br><span style="color:#6b7280">'+meta.icon+' '+meta.label+(s.provider?' · '+esc(s.provider):'')+'</span><br>'+(s.price?'<b style="font-size:15px;color:'+meta.color+'">'+(s.currency||'€')+segCost(s)+'</b>':'')+(s.duration?' · '+s.duration:'')+(s.date?'<br><span style="color:#9ca3af;font-size:11px">'+s.date+'</span>':'')+(s.passengers>1?'<br><span style="color:#9ca3af;font-size:11px">👥 '+s.passengers+' kişi · '+(s.currency||'€')+p(s.price).toLocaleString('tr-TR')+'/kişi</span>':'')+(s.note?'<br><span style="color:#9ca3af;font-size:11px;margin-top:4px;display:block">'+esc(s.note)+'</span>':'')+'</div>');
+    line.bindPopup('<div style="font-family:\'DM Sans\',sans-serif;font-size:13px;min-width:160px"><b style="font-size:14px;">'+esc(s.from)+' → '+esc(s.to)+'</b><br><span style="color:#6b7280">'+meta.icon+' '+_t('tp_'+s.type)+(s.provider?' · '+esc(s.provider):'')+'</span><br>'+(s.price?'<b style="font-size:15px;color:'+meta.color+'">'+(s.currency||'€')+segCost(s)+'</b>':'')+(s.duration?' · '+s.duration:'')+(s.date?'<br><span style="color:#9ca3af;font-size:11px">'+s.date+'</span>':'')+(s.passengers>1?'<br><span style="color:#9ca3af;font-size:11px">👥 '+_t('person',{n:s.passengers})+' · '+(s.currency||'€')+p(s.price).toLocaleString(_l())+_t('perPerson')+'</span>':'')+(s.note?'<br><span style="color:#9ca3af;font-size:11px;margin-top:4px;display:block">'+esc(s.note)+'</span>':'')+'</div>');
     mapLayers['line_'+s.tripId+'_'+s.id]=line;
     [{city:s.from,ll:s.fromLL},{city:s.to,ll:s.toLL}].forEach(({city,ll})=>{
       if(!cm[city]){const m=L.circleMarker(ll,{radius:7,fillColor:meta.color,color:'white',weight:2,fillOpacity:.9}).addTo(map);m.bindTooltip('<b style="font-family:\'DM Sans\',sans-serif;font-size:12px;">'+esc(city)+'</b>',{permanent:labelMode!=='hover',direction:'top',offset:[0,-8],className:'city-tooltip'});cm[city]=m;mapLayers['city_'+city]=m}
@@ -423,20 +662,20 @@ function goToTrips(){
 // ─── RENDER TRIPS ────────────────────────────────────────────────────────────
 function renderTrips(){
   const el=document.getElementById('tripsList');
-  if(!trips.length){el.innerHTML='<div class="empty-state"><span>🗺️</span><p>Henüz seyahat eklenmedi.<br>Yeni bir seyahat oluşturun.</p></div>';document.getElementById('totalAmount').textContent='—';document.getElementById('totalCount').textContent='0';document.getElementById('totalBreakdown').textContent='';document.getElementById('totalLabel').textContent='Toplam';return}
+  if(!trips.length){el.innerHTML='<div class="empty-state"><span>🗺️</span><p>'+_t('noTrips').replace('\\n','<br>')+'</p></div>';document.getElementById('totalAmount').textContent='—';document.getElementById('totalCount').textContent='0';document.getElementById('totalBreakdown').textContent='';document.getElementById('totalLabel').textContent=_t('totalLabel');return}
   el.innerHTML=trips.map((t,i)=>{
     const segs=t.segments||[];const stays=t.stays||[];
     const currs=[...new Set([...segs,...stays].filter(x=>x.price).map(x=>x.currency||'€'))];
-    const totalStr=currs.map(c=>{const segV=segs.filter(x=>x.price&&(x.currency||'€')===c).reduce((s,x)=>s+p(x.price)*(x.passengers||1),0);const stayV=stays.filter(x=>x.price&&(x.currency||'€')===c).reduce((s,x)=>s+p(x.price),0);return c+(segV+stayV).toLocaleString('tr-TR',{minimumFractionDigits:0,maximumFractionDigits:2})}).join(' + ');
+    const totalStr=currs.map(c=>{const segV=segs.filter(x=>x.price&&(x.currency||'€')===c).reduce((s,x)=>s+p(x.price)*(x.passengers||1),0);const stayV=stays.filter(x=>x.price&&(x.currency||'€')===c).reduce((s,x)=>s+p(x.price),0);return c+(segV+stayV).toLocaleString(_l(),{minimumFractionDigits:0,maximumFractionDigits:2})}).join(' + ');
     const segIcons=[...new Set(segs.map(x=>x.type))].map(tp=>(T[tp]||{}).icon||'🚀');
     const attrIcons=[...new Set((t.attractions||[]).map(x=>x.category))].map(c=>(A[c]||{}).icon||'📍');
     const icons=[...segIcons,...attrIcons].join(' ');
     const pax=[...new Set(segs.map(s=>s.passengers||1))];const paxS=[...new Set(stays.map(s=>s.passengers||1))];
     const paxAll=[...new Set([...segs,...stays].map(s=>s.passengers||1))];
-    const paxLabel=!segs.length&&!stays.length?'':paxAll.length===1?'👥 '+paxAll[0]+' kişi':'👥 Karma';
+    const paxLabel=!segs.length&&!stays.length?'':'👥 '+_t('person',{n:paxAll[0]})+(paxAll.length>1?' · '+_t('mixed'):'');
     const attrCount=(t.attractions||[]).length;
-    const metaParts=[segs.length+' segment',stays.length?'🏨 '+stays.length+' konaklama':'',attrCount?'📍 '+attrCount+' mekan':'',paxLabel,t.createdAt?fd(t.createdAt):''].filter(Boolean);
-    return '<div class="trip-card" draggable="true" ondragstart="event.stopPropagation();dragIdx='+i+';this.classList.add(\'dragging\')" ondragover="event.preventDefault();this.classList.add(\'drag-over\')" ondragleave="this.classList.remove(\'drag-over\')" ondrop="event.preventDefault();event.stopPropagation();if(dragIdx!==null&&dragIdx!=='+i+'){const t=trips.splice(dragIdx,1)[0];trips.splice('+i+',0,t);dragIdx=null;saveTrips();renderTrips();drawMap()}" ondragend="this.classList.remove(\'dragging\');document.querySelectorAll(\'.trip-card\').forEach(c=>c.classList.remove(\'drag-over\'))" onclick="openTripDetail(\''+t.id+'\')"><div class="tc-header"><div class="tc-left"><input type="checkbox" class="map-toggle" '+(t.visible!==false?'checked':'')+' onclick="event.stopPropagation();toggleTripVisibility(\''+t.id+'\')"><div class="tc-icon">'+(icons||'🗺')+'</div><div style="min-width:0"><div class="tc-name">'+esc(t.title)+'</div><div class="tc-meta">'+metaParts.join(' · ')+'</div></div></div><div class="tc-total">'+(totalStr||'—')+'</div></div><div class="tc-actions"><button class="btn btn-sm btn-ghost" onclick="event.stopPropagation();editTripTitle(\''+t.id+'\')">✏ Adı Düzenle</button><button class="btn btn-sm btn-ghost" onclick="event.stopPropagation();duplicateTrip(\''+t.id+'\')">📋 Kopyala</button><button class="btn btn-sm btn-danger" onclick="event.stopPropagation();confirmDeleteTrip(\''+t.id+'\')">🗑</button></div></div>'
+    const metaParts=[_t('segmentCount',{n:segs.length}),stays.length?_t('stayCount',{n:stays.length}):'',attrCount?_t('attrCount',{n:attrCount}):'',paxLabel,t.createdAt?fd(t.createdAt):''].filter(Boolean);
+    return '<div class="trip-card" draggable="true" ondragstart="event.stopPropagation();dragIdx='+i+';this.classList.add(\'dragging\')" ondragover="event.preventDefault();this.classList.add(\'drag-over\')" ondragleave="this.classList.remove(\'drag-over\')" ondrop="event.preventDefault();event.stopPropagation();if(dragIdx!==null&&dragIdx!=='+i+'){const t=trips.splice(dragIdx,1)[0];trips.splice('+i+',0,t);dragIdx=null;saveTrips();renderTrips();drawMap()}" ondragend="this.classList.remove(\'dragging\');document.querySelectorAll(\'.trip-card\').forEach(c=>c.classList.remove(\'drag-over\'))" onclick="openTripDetail(\''+t.id+'\')"><div class="tc-header"><div class="tc-left"><input type="checkbox" class="map-toggle" '+(t.visible!==false?'checked':'')+' onclick="event.stopPropagation();toggleTripVisibility(\''+t.id+'\')"><div class="tc-icon">'+(icons||'🗺')+'</div><div style="min-width:0"><div class="tc-name">'+esc(t.title)+'</div><div class="tc-meta">'+metaParts.join(' · ')+'</div></div></div><div class="tc-total">'+(totalStr||'—')+'</div></div><div class="tc-actions"><button class="btn btn-sm btn-ghost" onclick="event.stopPropagation();editTripTitle(\''+t.id+'\')">✏ '+_t('editTripName')+'</button><button class="btn btn-sm btn-ghost" onclick="event.stopPropagation();duplicateTrip(\''+t.id+'\')">📋 '+_t('duplicate')+'</button><button class="btn btn-sm btn-danger" onclick="event.stopPropagation();confirmDeleteTrip(\''+t.id+'\')">🗑</button></div></div>'
   }).join('');
   updateOverallTotal();
 }
@@ -445,16 +684,16 @@ function updateOverallTotal(){
   const segAll=[];const stayAll=[];visible.forEach(t=>{segAll.push(...(t.segments||[]));stayAll.push(...(t.stays||[]))});
   const bc={};segAll.filter(x=>x.price).forEach(x=>{const c=x.currency||'€';bc[c]=(bc[c]||0)+p(x.price)*(x.passengers||1)});
   stayAll.filter(x=>x.price).forEach(x=>{const c=x.currency||'€';bc[c]=(bc[c]||0)+p(x.price)});
-  const parts=Object.entries(bc).map(([c,v])=>c+v.toLocaleString('tr-TR',{minimumFractionDigits:0,maximumFractionDigits:2}));
+  const parts=Object.entries(bc).map(([c,v])=>c+v.toLocaleString(_l(),{minimumFractionDigits:0,maximumFractionDigits:2}));
   const segCount=visible.reduce((s,t)=>s+(t.segments||[]).length,0);
   const stayCount=visible.reduce((s,t)=>s+(t.stays||[]).length,0);
   const attrCount=visible.reduce((s,t)=>s+(t.attractions||[]).length,0);
   const tp=[...segAll,...stayAll].reduce((s,x)=>s+(x.passengers||1),0);
-  const parts2=[];if(segCount)parts2.push(segCount+' segment');if(stayCount)parts2.push('🏨 '+stayCount+' konaklama');if(attrCount)parts2.push('📍 '+attrCount+' mekan');parts2.push(tp+' kişi');parts2.push(visible.length+' seyahat');
+  const parts2=[];if(segCount)parts2.push(_t('segmentCount',{n:segCount}));if(stayCount)parts2.push(_t('stayCount',{n:stayCount}));if(attrCount)parts2.push(_t('attrCount',{n:attrCount}));parts2.push(_t('person',{n:tp}));parts2.push(_t('tripCount',{n:visible.length}));
   document.getElementById('totalAmount').textContent=parts.length?parts.join(' + '):'—';
   document.getElementById('totalCount').textContent=parts2.join(' · ');
   document.getElementById('totalBreakdown').textContent='';
-  document.getElementById('totalLabel').textContent=visible.length!==trips.length?'Görünür Seyahatler Toplamı':'Tüm Seyahatler Toplamı';
+  document.getElementById('totalLabel').textContent=visible.length!==trips.length?_t('totalVisible'):_t('totalAllTrips');
 }
 
 // ─── RENDER TRIP DETAIL ──────────────────────────────────────────────────────
@@ -462,32 +701,32 @@ function renderTripDetail(){
   const trip=trips.find(t=>t.id===activeTripId);if(!trip){goToTrips();return}
   const segs=trip.segments||[];const stays=trip.stays||[];
   const paxAll=[...new Set([...segs,...stays].map(s=>s.passengers||1))];
-  const paxLabel=segs.length||stays.length?paxAll.length===1?'👥 '+paxAll[0]+' kişi':'👥 Karma':'';
-  document.getElementById('tripDetailHeader').innerHTML='<div class="back-row"><button class="back-btn" onclick="goToTrips()">←</button><span class="inline-title">'+esc(trip.title)+'</span>'+(paxLabel?'<span style="font-size:12px;color:var(--text3);font-weight:500;white-space:nowrap">'+paxLabel+'</span>':'')+'<button class="btn btn-sm btn-ghost" onclick="editTripTitle(\''+trip.id+'\')">✏</button>'+(segs.length||stays.length?'<button class="btn btn-sm" onclick="setAllPassengers(\''+trip.id+'\')">👥 Tümünü Ayarla</button>':'')+'</div>';
+  const paxLabel=segs.length||stays.length?'👥 '+_t('person',{n:paxAll[0]})+(paxAll.length>1?' · '+_t('mixed'):''):'';
+  document.getElementById('tripDetailHeader').innerHTML='<div class="back-row"><button class="back-btn" onclick="goToTrips()">←</button><span class="inline-title">'+esc(trip.title)+'</span>'+(paxLabel?'<span style="font-size:12px;color:var(--text3);font-weight:500;white-space:nowrap">'+paxLabel+'</span>':'')+'<button class="btn btn-sm btn-ghost" onclick="editTripTitle(\''+trip.id+'\')">✏</button>'+(segs.length||stays.length?'<button class="btn btn-sm" onclick="setAllPassengers(\''+trip.id+'\')">'+_t('setAllPassengers')+'</button>':'')+'</div>';
 
   // Segments
-  let segHtml='<div class="section-title" style="margin-top:0">Ulaşım'+(clipboard&&clipboard.type==='seg'?' <button class="btn btn-sm" onclick="pasteSegment()" style="margin-left:8px">📥 Yapıştır</button>':'')+'</div>';
-  if(!segs.length)segHtml+='<div class="empty-state" style="padding:16px 8px"><span>📍</span><p>Henüz ulaşım eklenmedi.</p></div>';
+  let segHtml='<div class="section-title" style="margin-top:0">'+_t('transport')+(clipboard&&clipboard.type==='seg'?' <button class="btn btn-sm" onclick="pasteSegment()" style="margin-left:8px">'+_t('paste')+'</button>':'')+'</div>';
+  if(!segs.length)segHtml+='<div class="empty-state" style="padding:16px 8px"><span>📍</span><p>'+_t('noTransport')+'</p></div>';
   else segHtml+=segs.map(s=>{
     const meta=T[s.type]||T.diger;const st=segCost(s);const gi=segs.findIndex(x=>x.id===s.id);
-    return '<div class="segment-item"><div class="si-order">'+(gi+1)+'</div><div class="si-body"><div class="route-card"><div class="rc-header"><div class="rc-title"><div class="transport-badge" style="background:'+meta.bg+';color:'+meta.color+'">'+meta.icon+'</div><div><div class="rc-cities">'+esc(s.from)+' → '+esc(s.to)+'</div><div class="rc-provider">'+meta.label+(s.provider?' · '+esc(s.provider):'')+'</div></div></div><div style="text-align:right">'+(s.price?'<div class="rc-price" style="color:'+meta.color+'">'+(s.currency||'€')+st.toLocaleString('tr-TR')+'</div>':'<div class="rc-price" style="color:var(--text3)">—</div>')+'</div></div><div class="rc-meta"><span class="rc-chip">👥 '+(s.passengers||1)+' kişi</span>'+(s.duration?'<span class="rc-chip">⏱ '+esc(s.duration)+'</span>':'')+(s.date?'<span class="rc-chip">📅 '+esc(s.date)+'</span>':'')+(s.price?'<span class="rc-chip">'+(s.currency||'€')+p(s.price).toLocaleString('tr-TR')+' / kişi</span>':'')+(!s.fromLL||!s.toLL?'<span class="rc-chip" style="background:#fef2f2;color:#dc2626">⚠ Koordinat yok</span><button class="btn btn-sm" onclick="retrySegGeocode(\''+trip.id+'\',\''+s.id+'\')" style="margin-left:4px">🔄</button>':'')+'</div>'+(s.note?'<div class="rc-note">'+esc(s.note)+'</div>':'')+'</div><div class="si-actions"><button class="btn btn-sm" onclick="moveSegment(\''+trip.id+'\',\''+s.id+'\',-1)"'+(gi===0?' disabled style="opacity:.3"':'')+'>↑</button><button class="btn btn-sm" onclick="moveSegment(\''+trip.id+'\',\''+s.id+'\',1)"'+(gi===segs.length-1?' disabled style="opacity:.3"':'')+'>↓</button><button class="btn btn-sm" onclick="copySegment(\''+trip.id+'\',\''+s.id+'\')">📄</button><button class="btn btn-sm" onclick="openEditSeg(\''+trip.id+'\',\''+s.id+'\')">✏ Düzenle</button><button class="btn btn-sm btn-danger" onclick="confirmDeleteSeg(\''+trip.id+'\',\''+s.id+'\')">🗑</button>'+(s.fromLL&&s.toLL?'<button class="btn btn-sm" onclick="flyTo(\''+trip.id+'\',\''+s.id+'\')">🔍 Haritada Gör</button>':'')+'</div></div></div>'
+    return '<div class="segment-item"><div class="si-order">'+(gi+1)+'</div><div class="si-body"><div class="route-card"><div class="rc-header"><div class="rc-title"><div class="transport-badge" style="background:'+meta.bg+';color:'+meta.color+'">'+meta.icon+'</div><div><div class="rc-cities">'+esc(s.from)+' → '+esc(s.to)+'</div><div class="rc-provider">'+_t('tp_'+s.type)+(s.provider?' · '+esc(s.provider):'')+'</div></div></div><div style="text-align:right">'+(s.price?'<div class="rc-price" style="color:'+meta.color+'">'+(s.currency||'€')+st.toLocaleString(_l())+'</div>':'<div class="rc-price" style="color:var(--text3)">—</div>')+'</div></div><div class="rc-meta"><span class="rc-chip">👥 '+_t('person',{n:s.passengers||1})+'</span>'+(s.duration?'<span class="rc-chip">⏱ '+esc(s.duration)+'</span>':'')+(s.date?'<span class="rc-chip">📅 '+esc(s.date)+'</span>':'')+(s.price?'<span class="rc-chip">'+(s.currency||'€')+p(s.price).toLocaleString(_l())+_t('perPerson')+'</span>':'')+(!s.fromLL||!s.toLL?'<span class="rc-chip" style="background:#fef2f2;color:#dc2626">'+_t('noCoords')+'</span><button class="btn btn-sm" onclick="retrySegGeocode(\''+trip.id+'\',\''+s.id+'\')" style="margin-left:4px">🔄</button>':'')+'</div>'+(s.note?'<div class="rc-note">'+esc(s.note)+'</div>':'')+'</div><div class="si-actions"><button class="btn btn-sm" onclick="moveSegment(\''+trip.id+'\',\''+s.id+'\',-1)"'+(gi===0?' disabled style="opacity:.3"':'')+'>↑</button><button class="btn btn-sm" onclick="moveSegment(\''+trip.id+'\',\''+s.id+'\',1)"'+(gi===segs.length-1?' disabled style="opacity:.3"':'')+'>↓</button><button class="btn btn-sm" onclick="copySegment(\''+trip.id+'\',\''+s.id+'\')">📄</button><button class="btn btn-sm" onclick="openEditSeg(\''+trip.id+'\',\''+s.id+'\')">✏ '+_t('edit')+'</button><button class="btn btn-sm btn-danger" onclick="confirmDeleteSeg(\''+trip.id+'\',\''+s.id+'\')">🗑</button>'+(s.fromLL&&s.toLL?'<button class="btn btn-sm" onclick="flyTo(\''+trip.id+'\',\''+s.id+'\')">'+_t('viewOnMap')+'</button>':'')+'</div></div></div>'
   }).join('');
 
   // Add segment form
   const lastSeg=segs.length?segs[segs.length-1]:null;const defFrom=lastSeg?lastSeg.to:'';
-  segHtml+='<div class="segment-form-wrap" style="margin-top:4px"><div class="section-title">+ Ulaşım Ekle</div><div style="display:flex;flex-direction:column;gap:8px"><div class="form-group"><div style="display:grid;grid-template-columns:repeat(6,1fr);gap:4px" id="addSegTransport">'+Object.entries(T).map(([k,v])=>'<button class="transport-btn" data-type="'+k+'" onclick="selectSegTransport(\''+k+'\',this)"><span class="icon">'+v.icon+'</span>'+v.label+'</button>').join('')+'</div></div><div class="form-row"><div class="form-group"><label class="form-label">Kalkış</label><input type="text" id="seg-from" value="'+defFrom+'" placeholder="'+(lastSeg?'(önceki varış)':'Berlin')+'"></div><div class="form-group"><label class="form-label">Varış *</label><input type="text" id="seg-to" placeholder="İstanbul"></div></div><div class="form-row"><div class="form-group"><label class="form-label">Sağlayıcı</label><input type="text" id="seg-provider" placeholder="Pegasus, DB..."></div><div class="form-group" style="flex-direction:row;gap:6px;align-items:flex-end"><div style="flex:1"><label class="form-label">Fiyat</label><div class="currency-row"><select id="seg-currency"><option value="€">€</option><option value="₺">₺</option><option value="$">$</option><option value="£">£</option></select><input type="text" inputmode="decimal" id="seg-price" placeholder="0"></div></div><button class="btn btn-primary" style="padding:8px 16px;height:36px;flex-shrink:0;align-self:flex-end" onclick="addSegment()">Ekle</button></div></div><div class="form-row"><div class="form-group"><label class="form-label">Tarih</label><input type="text" id="seg-date" placeholder="15.06.2026"></div><div class="form-group"><label class="form-label">Süre</label><input type="text" id="seg-duration" placeholder="3s 20dk"></div></div><div class="form-row"><div class="form-group"><label class="form-label">Kişi Sayısı</label><input type="number" id="seg-passengers" value="1" min="1" max="20"></div><div class="form-group"><label class="form-label">Not</label><input type="text" id="seg-note" placeholder="Ek bilgi, rezervasyon kodu..."></div></div></div></div>';
+  segHtml+='<div class="segment-form-wrap" style="margin-top:4px"><div class="section-title">'+_t('addTransport')+'</div><div style="display:flex;flex-direction:column;gap:8px"><div class="form-group"><div style="display:grid;grid-template-columns:repeat(6,1fr);gap:4px" id="addSegTransport">'+Object.entries(T).map(([k,v])=>'<button class="transport-btn" data-type="'+k+'" onclick="selectSegTransport(\''+k+'\',this)"><span class="icon">'+v.icon+'</span>'+_t('tp_'+k)+'</button>').join('')+'</div></div><div class="form-row"><div class="form-group"><label class="form-label">'+_t('departure')+'</label><input type="text" id="seg-from" value="'+defFrom+'" placeholder="'+(lastSeg?'(önceki varış)':'Berlin')+'"></div><div class="form-group"><label class="form-label">'+_t('arrival')+' *</label><input type="text" id="seg-to" placeholder="İstanbul"></div></div><div class="form-row"><div class="form-group"><label class="form-label">'+_t('provider')+'</label><input type="text" id="seg-provider" placeholder="Pegasus, DB..."></div><div class="form-group" style="flex-direction:row;gap:6px;align-items:flex-end"><div style="flex:1"><label class="form-label">'+_t('price')+'</label><div class="currency-row"><select id="seg-currency"><option value="€">€</option><option value="₺">₺</option><option value="$">$</option><option value="£">£</option></select><input type="text" inputmode="decimal" id="seg-price" placeholder="0"></div></div><button class="btn btn-primary" style="padding:8px 16px;height:36px;flex-shrink:0;align-self:flex-end" onclick="addSegment()">'+_t('add')+'</button></div></div><div class="form-row"><div class="form-group"><label class="form-label">'+_t('date')+'</label><input type="text" id="seg-date" placeholder="15.06.2026"></div><div class="form-group"><label class="form-label">'+_t('duration')+'</label><input type="text" id="seg-duration" placeholder="3s 20dk"></div></div><div class="form-row"><div class="form-group"><label class="form-label">'+_t('passengers')+'</label><input type="number" id="seg-passengers" value="1" min="1" max="20"></div><div class="form-group"><label class="form-label">Not</label><input type="text" id="seg-note" placeholder="Ek bilgi, rezervasyon kodu..."></div></div></div></div>';
   document.getElementById('segmentList').innerHTML=segHtml;
   document.getElementById('seg-currency').value=settings.defaultCurrency;
 
   // Stays
-  let stayHtml='<div class="stay-section"><div class="section-title">🏨 Konaklama'+(clipboard&&clipboard.type==='stay'?' <button class="btn btn-sm" onclick="pasteStay()" style="margin-left:8px">📥 Yapıştır</button>':'')+'</div>';
-  if(!stays.length)stayHtml+='<div class="empty-state" style="padding:16px 8px"><span>🏨</span><p>Henüz konaklama eklenmedi.</p></div>';
+  let stayHtml='<div class="stay-section"><div class="section-title">🏨 '+_t('accommodation')+(clipboard&&clipboard.type==='stay'?' <button class="btn btn-sm" onclick="pasteStay()" style="margin-left:8px">'+_t('paste')+'</button>':'')+'</div>';
+  if(!stays.length)stayHtml+='<div class="empty-state" style="padding:16px 8px"><span>🏨</span><p>'+_t('noStay')+'</p></div>';
   else stayHtml+=stays.map(s=>{
     const st=stayCost(s);
-    return '<div class="stay-card" style="margin-bottom:8px"><div class="stay-header"><div><div class="stay-name">🏨 '+esc(s.name)+'</div><div class="stay-city">'+esc(s.city)+(s.nights?' · '+s.nights+' gece':'')+'</div></div><div style="text-align:right">'+(s.price?'<div class="rc-price" style="color:#7c3aed">'+(s.currency||'€')+st.toLocaleString('tr-TR')+'</div>':'<div class="rc-price" style="color:var(--text3)">—</div>')+'</div></div><div class="stay-meta"><span class="rc-chip">👥 '+(s.passengers||1)+' kişi</span>'+(s.checkIn?'<span class="rc-chip">📅 Giriş: '+esc(s.checkIn)+'</span>':'')+(s.checkOut?'<span class="rc-chip">🚪 Çıkış: '+esc(s.checkOut)+'</span>':'')+(s.nights?'<span class="rc-chip">🌙 '+s.nights+' gece</span>':'')+(s.price?'<span class="rc-chip">'+(s.currency||'€')+p(s.price).toLocaleString('tr-TR')+' toplam</span>':'')+(s.price&&s.nights?'<span class="rc-chip">🌙 gecelik '+(s.currency||'€')+(p(s.price)/s.nights).toLocaleString('tr-TR',{minimumFractionDigits:0,maximumFractionDigits:2})+'</span>':'')+(!s.cityLat?'<span class="rc-chip" style="background:#fef2f2;color:#dc2626">⚠ Koordinat yok</span><button class="btn btn-sm" onclick="retryStayGeocode(\''+trip.id+'\',\''+s.id+'\')" style="margin-left:4px">🔄</button>':'')+'</div>'+(s.note?'<div class="rc-note">'+esc(s.note)+'</div>':'')+'<div class="stay-actions"><button class="btn btn-sm" onclick="copyStay(\''+trip.id+'\',\''+s.id+'\')">📄</button><button class="btn btn-sm" onclick="openEditStay(\''+trip.id+'\',\''+s.id+'\')">✏ Düzenle</button><button class="btn btn-sm btn-danger" onclick="confirmDeleteStay(\''+trip.id+'\',\''+s.id+'\')">🗑</button></div></div>'
+    return '<div class="stay-card" style="margin-bottom:8px"><div class="stay-header"><div><div class="stay-name">🏨 '+esc(s.name)+'</div><div class="stay-city">'+esc(s.city)+(s.nights?' · '+s.nights+_t('night'):'')+'</div></div><div style="text-align:right">'+(s.price?'<div class="rc-price" style="color:#7c3aed">'+(s.currency||'€')+st.toLocaleString(_l())+'</div>':'<div class="rc-price" style="color:var(--text3)">—</div>')+'</div></div><div class="stay-meta"><span class="rc-chip">👥 '+_t('person',{n:s.passengers||1})+'</span>'+(s.checkIn?'<span class="rc-chip">📅 '+_t('checkIn')+': '+esc(s.checkIn)+'</span>':'')+(s.checkOut?'<span class="rc-chip">🚪 '+_t('checkOut')+': '+esc(s.checkOut)+'</span>':'')+(s.nights?'<span class="rc-chip">🌙 '+s.nights+_t('night')+'</span>':'')+(s.price?'<span class="rc-chip">'+(s.currency||'€')+p(s.price).toLocaleString(_l())+' '+_t('total')+'</span>':'')+(s.price&&s.nights?'<span class="rc-chip">🌙 '+_t('nightlyRate')+' '+(s.currency||'€')+(p(s.price)/s.nights).toLocaleString(_l(),{minimumFractionDigits:0,maximumFractionDigits:2})+'</span>':'')+(!s.cityLat?'<span class="rc-chip" style="background:#fef2f2;color:#dc2626">'+_t('noCoords')+'</span><button class="btn btn-sm" onclick="retryStayGeocode(\''+trip.id+'\',\''+s.id+'\')" style="margin-left:4px">🔄</button>':'')+'</div>'+(s.note?'<div class="rc-note">'+esc(s.note)+'</div>':'')+'<div class="stay-actions"><button class="btn btn-sm" onclick="copyStay(\''+trip.id+'\',\''+s.id+'\')">📄</button><button class="btn btn-sm" onclick="openEditStay(\''+trip.id+'\',\''+s.id+'\')">✏ '+_t('edit')+'</button><button class="btn btn-sm btn-danger" onclick="confirmDeleteStay(\''+trip.id+'\',\''+s.id+'\')">🗑</button></div></div>'
   }).join('');
 
-  stayHtml+='<div class="segment-form-wrap"><div class="section-title">+ Konaklama Ekle</div><div style="display:flex;flex-direction:column;gap:8px"><div class="form-row"><div class="form-group"><label class="form-label">Otel / Konaklama Adı *</label><input type="text" id="stay-name" placeholder="Hilton Berlin"></div><div class="form-group"><label class="form-label">Şehir *</label><input type="text" id="stay-city" placeholder="Berlin"></div></div><div class="form-row"><div class="form-group"><label class="form-label">Giriş Tarihi</label><input type="text" id="stay-checkin" placeholder="15.06.2026"></div><div class="form-group"><label class="form-label">Çıkış Tarihi</label><input type="text" id="stay-checkout" placeholder="18.06.2026"></div></div><div class="form-row"><div class="form-group"><label class="form-label">Gece Sayısı</label><input type="number" id="stay-nights" value="1" min="1" max="90"></div><div class="form-group" style="flex-direction:row;gap:6px;align-items:flex-end"><div style="flex:1"><label class="form-label">Toplam Fiyat</label><div class="currency-row"><select id="stay-currency"><option value="€">€</option><option value="₺">₺</option><option value="$">$</option><option value="£">£</option></select><input type="text" inputmode="decimal" id="stay-price" placeholder="0"></div></div><button class="btn btn-primary" style="padding:8px 16px;height:36px;flex-shrink:0;align-self:flex-end" onclick="addStay()">Ekle</button></div></div><div class="form-row"><div class="form-group"><label class="form-label">Kişi Sayısı</label><input type="number" id="stay-passengers" value="1" min="1" max="20"></div><div class="form-group"><label class="form-label">Not</label><input type="text" id="stay-note" placeholder="Oda tipi, kahvaltı..."></div></div></div></div></div>';
+  stayHtml+='<div class="segment-form-wrap"><div class="section-title">'+_t('addAccommodation')+'</div><div style="display:flex;flex-direction:column;gap:8px"><div class="form-row"><div class="form-group"><label class="form-label">'+_t('hotelName')+' *</label><input type="text" id="stay-name" placeholder="Hilton Berlin"></div><div class="form-group"><label class="form-label">'+_t('city')+' *</label><input type="text" id="stay-city" placeholder="Berlin"></div></div><div class="form-row"><div class="form-group"><label class="form-label">'+_t('checkIn')+'</label><input type="text" id="stay-checkin" placeholder="15.06.2026"></div><div class="form-group"><label class="form-label">'+_t('checkOut')+'</label><input type="text" id="stay-checkout" placeholder="18.06.2026"></div></div><div class="form-row"><div class="form-group"><label class="form-label">'+_t('nights')+'</label><input type="number" id="stay-nights" value="1" min="1" max="90"></div><div class="form-group" style="flex-direction:row;gap:6px;align-items:flex-end"><div style="flex:1"><label class="form-label">'+_t('totalPrice')+'</label><div class="currency-row"><select id="stay-currency"><option value="€">€</option><option value="₺">₺</option><option value="$">$</option><option value="£">£</option></select><input type="text" inputmode="decimal" id="stay-price" placeholder="0"></div></div><button class="btn btn-primary" style="padding:8px 16px;height:36px;flex-shrink:0;align-self:flex-end" onclick="addStay()">'+_t('add')+'</button></div></div><div class="form-row"><div class="form-group"><label class="form-label">'+_t('passengers')+'</label><input type="number" id="stay-passengers" value="1" min="1" max="20"></div><div class="form-group"><label class="form-label">'+_t('note')+'</label><input type="text" id="stay-note" placeholder="Oda tipi, kahvaltı..."></div></div></div></div></div>';
   document.getElementById('stayList').innerHTML=stayHtml;
   document.getElementById('stay-currency').value=settings.defaultCurrency;
   document.getElementById('addSegmentSection').innerHTML='';
@@ -496,18 +735,18 @@ function renderTripDetail(){
   const attrs=trip.attractions||[];
   const sorted=[...attrs].sort((a,b)=>((a.time||'99:99').localeCompare(b.time||'99:99')));
   const attrCat=attrCategory||'all';
-  let attrHtml='<div class="stay-section"><div class="section-title">📍 Aktiviteler'+(clipboard&&clipboard.type==='attr'?' <button class="btn btn-sm" onclick="pasteAttr()" style="margin-left:8px">📥 Yapıştır</button>':'')+'</div><div class="filter-bar" style="padding:0 0 8px 0;border:none">'+
-    '<button class="filter-chip'+(attrCat==='all'?' active':'')+'" onclick="attrCategory=null;renderTripDetail()">Tümü</button>'+
-    Object.entries(A).map(([k,v])=>'<button class="filter-chip'+(attrCat===k?' active':'')+'" onclick="attrCategory=\''+k+'\';renderTripDetail()">'+v.icon+' '+v.label+'</button>').join('')+
+  let attrHtml='<div class="stay-section"><div class="section-title">📍 '+_t('activities')+(clipboard&&clipboard.type==='attr'?' <button class="btn btn-sm" onclick="pasteAttr()" style="margin-left:8px">'+_t('paste')+'</button>':'')+'</div><div class="filter-bar" style="padding:0 0 8px 0;border:none">'+
+    '<button class="filter-chip'+(attrCat==='all'?' active':'')+'" onclick="attrCategory=null;renderTripDetail()">'+_t('all')+'</button>'+
+    Object.entries(A).map(([k,v])=>'<button class="filter-chip'+(attrCat===k?' active':'')+'" onclick="attrCategory=\''+k+'\';renderTripDetail()">'+v.icon+' '+_t('cat_'+k)+'</button>').join('')+
   '</div>';
   const filtered=(attrCat==='all'?sorted:sorted.filter(a=>a.category===attrCat));
-  if(!filtered.length)attrHtml+='<div class="empty-state" style="padding:12px 8px"><span>📍</span><p>Henüz mekan eklenmedi.</p></div>';
+  if(!filtered.length)attrHtml+='<div class="empty-state" style="padding:12px 8px"><span>📍</span><p>'+_t('noAttr')+'</p></div>';
   else attrHtml+=filtered.map(a=>{
     const meta=A[a.category]||{icon:'📍',color:'#6b7280',bg:'#f9fafb'};
-    return '<div class="stay-card" style="margin-bottom:8px"><div class="stay-header"><div><div class="stay-name"><span class="transport-badge" style="background:'+meta.bg+';color:'+meta.color+';display:inline-flex;width:24px;height:24px;font-size:13px;margin-right:6px">'+meta.icon+'</span>'+esc(a.name)+'</div><div class="stay-city">'+(a.time?'🕐 '+esc(a.time)+' · ':'')+esc(a.city)+(a.note?' · '+esc(a.note):'')+'</div></div></div>'+(a.lat?'':'<div class="rc-meta"><span class="rc-chip" style="background:#fef2f2;color:#dc2626">⚠ Koordinat yok</span><button class="btn btn-sm" onclick="retryAttrGeocode(\''+trip.id+'\',\''+a.id+'\')" style="margin-left:4px">🔄</button></div>')+'<div class="stay-actions"><button class="btn btn-sm" onclick="copyAttr(\''+trip.id+'\',\''+a.id+'\')">📄</button><button class="btn btn-sm" onclick="openEditAttr(\''+trip.id+'\',\''+a.id+'\')">✏ Düzenle</button><button class="btn btn-sm btn-danger" onclick="confirmDeleteAttr(\''+trip.id+'\',\''+a.id+'\')">🗑</button></div></div>'
+    return '<div class="stay-card" style="margin-bottom:8px"><div class="stay-header"><div><div class="stay-name"><span class="transport-badge" style="background:'+meta.bg+';color:'+meta.color+';display:inline-flex;width:24px;height:24px;font-size:13px;margin-right:6px">'+meta.icon+'</span>'+esc(a.name)+'</div><div class="stay-city">'+(a.time?'🕐 '+esc(a.time)+' · ':'')+esc(a.city)+(a.note?' · '+esc(a.note):'')+'</div></div></div>'+(a.lat?'':'<div class="rc-meta"><span class="rc-chip" style="background:#fef2f2;color:#dc2626">'+_t('noCoords')+'</span><button class="btn btn-sm" onclick="retryAttrGeocode(\''+trip.id+'\',\''+a.id+'\')" style="margin-left:4px">🔄</button></div>')+'<div class="stay-actions"><button class="btn btn-sm" onclick="copyAttr(\''+trip.id+'\',\''+a.id+'\')">📄</button><button class="btn btn-sm" onclick="openEditAttr(\''+trip.id+'\',\''+a.id+'\')">✏ '+_t('edit')+'</button><button class="btn btn-sm btn-danger" onclick="confirmDeleteAttr(\''+trip.id+'\',\''+a.id+'\')">🗑</button></div></div>'
   }).join('');
 
-  attrHtml+='<div class="segment-form-wrap"><div class="section-title">+ Mekan Ekle</div><div class="form-group"><div style="display:flex;gap:4px">'+Object.entries(A).map(([k,v])=>'<button class="transport-btn'+(attrCategory===k?' selected':'')+'" onclick="selectAttrCategory(\''+k+'\',this)"><span class="icon">'+v.icon+'</span>'+v.label+'</button>').join('')+'</div></div><div class="form-row"><div class="form-group"><label class="form-label">Mekan Adı *</label><input type="text" id="attr-name" placeholder="Eyfel Kulesi"></div><div class="form-group"><label class="form-label">Şehir *</label><input type="text" id="attr-city" placeholder="Paris"></div></div><div class="form-row"><div class="form-group"><label class="form-label">Saat</label><input type="time" id="attr-time"></div><div class="form-group"><label class="form-label">Not</label><input type="text" id="attr-note" placeholder="Önerilen saat, bilet bilgisi..."></div></div><button class="btn btn-primary" style="align-self:flex-start;margin-top:4px" onclick="addAttraction()">Ekle</button></div>';
+  attrHtml+='<div class="segment-form-wrap"><div class="section-title">'+_t('addActivity')+'</div><div class="form-group"><div style="display:flex;gap:4px">'+Object.entries(A).map(([k,v])=>'<button class="transport-btn'+(attrCategory===k?' selected':'')+'" onclick="selectAttrCategory(\''+k+'\',this)"><span class="icon">'+v.icon+'</span>'+_t('cat_'+k)+'</button>').join('')+'</div></div><div class="form-row"><div class="form-group"><label class="form-label">'+_t('attrName')+' *</label><input type="text" id="attr-name" placeholder="Eyfel Kulesi"></div><div class="form-group"><label class="form-label">'+_t('city')+' *</label><input type="text" id="attr-city" placeholder="Paris"></div></div><div class="form-row"><div class="form-group"><label class="form-label">'+_t('time')+'</label><input type="time" id="attr-time"></div><div class="form-group"><label class="form-label">'+_t('note')+'</label><input type="text" id="attr-note" placeholder="Önerilen saat, bilet bilgisi..."></div></div><button class="btn btn-primary" style="align-self:flex-start;margin-top:4px" onclick="addAttraction()">'+_t('add')+'</button></div>';
   document.getElementById('attrList').innerHTML=attrHtml;
 
   updateTotal(trip);
@@ -519,38 +758,38 @@ function updateTotal(trip){
   stays.filter(x=>x.price).forEach(x=>{const c=x.currency||'€';byCurrency[c]=(byCurrency[c]||0)+p(x.price)});
   const segByCurrency={};segs.filter(x=>x.price).forEach(x=>{const c=x.currency||'€';segByCurrency[c]=(segByCurrency[c]||0)+p(x.price)*(x.passengers||1)});
   const stayByCurrency={};stays.filter(x=>x.price).forEach(x=>{const c=x.currency||'€';stayByCurrency[c]=(stayByCurrency[c]||0)+p(x.price)});
-  const parts=Object.entries(byCurrency).map(([c,v])=>c+v.toLocaleString('tr-TR',{minimumFractionDigits:0,maximumFractionDigits:2}));
+  const parts=Object.entries(byCurrency).map(([c,v])=>c+v.toLocaleString(_l(),{minimumFractionDigits:0,maximumFractionDigits:2}));
   const attrs=trip.attractions||[];const attrCount=attrs.length;
   const segCount=segs.length;const stayCount=stays.length;
   const tp=[...segs,...stays].reduce((s,x)=>s+(x.passengers||1),0);
   const breakdownParts=[];
-  if(segCount)Object.entries(segByCurrency).forEach(([c,v])=>breakdownParts.push('🚗 '+c+v.toLocaleString('tr-TR',{minimumFractionDigits:0,maximumFractionDigits:2})+' (ulaşım)'));
-  if(stayCount)Object.entries(stayByCurrency).forEach(([c,v])=>breakdownParts.push('🏨 '+c+v.toLocaleString('tr-TR',{minimumFractionDigits:0,maximumFractionDigits:2})+' (konaklama)'));
-  const countParts=[];if(segCount)countParts.push(segCount+' segment');if(stayCount)countParts.push('🏨 '+stayCount+' konaklama');if(attrCount)countParts.push('📍 '+attrCount+' mekan');countParts.push(tp+' kişi');
+  if(segCount)Object.entries(segByCurrency).forEach(([c,v])=>breakdownParts.push('🚗 '+c+v.toLocaleString(_l(),{minimumFractionDigits:0,maximumFractionDigits:2})+_t('transportCost')));
+  if(stayCount)Object.entries(stayByCurrency).forEach(([c,v])=>breakdownParts.push('🏨 '+c+v.toLocaleString(_l(),{minimumFractionDigits:0,maximumFractionDigits:2})+_t('stayCost')));
+  const countParts=[];if(segCount)countParts.push(_t('segmentCount',{n:segCount}));if(stayCount)countParts.push(_t('stayCount',{n:stayCount}));if(attrCount)countParts.push(_t('attrCount',{n:attrCount}));countParts.push(_t('person',{n:tp}));
   document.getElementById('totalAmount').textContent=parts.length?parts.join(' + '):'—';
   document.getElementById('totalCount').textContent=countParts.join(' · ');
   document.getElementById('totalBreakdown').textContent=breakdownParts.join(' · ');
-  document.getElementById('totalLabel').textContent=esc(trip.title)+' Toplamı';
+  document.getElementById('totalLabel').textContent=_t('tripTotal',{name:esc(trip.title)});
 }
 
 // ─── SEGMENT CRUD ────────────────────────────────────────────────────────────
-function copySegment(tripId,segId){const trip=trips.find(t=>t.id===tripId);if(!trip)return;const seg=(trip.segments||[]).find(s=>s.id===segId);if(!seg)return;clipboard={type:'seg',data:{...seg}};renderTripDetail();toast('Segment kopyalandı 📄')}
-function pasteSegment(){if(!clipboard||clipboard.type!=='seg'){toast('Kopyalanmış segment yok');return}const trip=trips.find(t=>t.id===activeTripId);if(!trip){toast('Önce bir seyahat açın');return}const s=clipboard.data;const seg={...s,id:'seg_'+Date.now(),order:trip.segments.length};toast('Koordinatlar aranıyor...');Promise.all([geocode(seg.from),geocode(seg.to)]).then(([f,t])=>{seg.fromLL=f;seg.toLL=t;trip.segments.push(seg);clipboard=null;saveTrips();renderTripDetail();drawMap();toast('Segment yapıştırıldı ✓')})}
-function copyStay(tripId,stayId){const trip=trips.find(t=>t.id===tripId);if(!trip)return;const stay=(trip.stays||[]).find(s=>s.id===stayId);if(!stay)return;clipboard={type:'stay',data:{...stay}};renderTripDetail();toast('Konaklama kopyalandı 📄')}
-function pasteStay(){if(!clipboard||clipboard.type!=='stay'){toast('Kopyalanmış konaklama yok');return}const trip=trips.find(t=>t.id===activeTripId);if(!trip){toast('Önce bir seyahat açın');return}const s=clipboard.data;const stay={...s,id:'stay_'+Date.now()};toast('Koordinat aranıyor...');geocode(stay.city).then(ll=>{stay.cityLat=ll;trip.stays.push(stay);clipboard=null;saveTrips();renderTripDetail();drawMap();toast('Konaklama yapıştırıldı ✓')})}
+function copySegment(tripId,segId){const trip=trips.find(t=>t.id===tripId);if(!trip)return;const seg=(trip.segments||[]).find(s=>s.id===segId);if(!seg)return;clipboard={type:'seg',data:{...seg}};renderTripDetail();toast(_t('segCopied'))}
+function pasteSegment(){if(!clipboard||clipboard.type!=='seg'){toast(_t('noCopiedSeg'));return}const trip=trips.find(t=>t.id===activeTripId);if(!trip){toast(_t('openTripFirst'));return}const s=clipboard.data;const seg={...s,id:'seg_'+Date.now(),order:trip.segments.length};toast(_t('searchingCoords'));Promise.all([geocode(seg.from),geocode(seg.to)]).then(([f,t])=>{seg.fromLL=f;seg.toLL=t;trip.segments.push(seg);clipboard=null;saveTrips();renderTripDetail();drawMap();toast(_t('segPasted'))})}
+function copyStay(tripId,stayId){const trip=trips.find(t=>t.id===tripId);if(!trip)return;const stay=(trip.stays||[]).find(s=>s.id===stayId);if(!stay)return;clipboard={type:'stay',data:{...stay}};renderTripDetail();toast(_t('stayCopied'))}
+function pasteStay(){if(!clipboard||clipboard.type!=='stay'){toast(_t('noCopiedStay'));return}const trip=trips.find(t=>t.id===activeTripId);if(!trip){toast(_t('openTripFirst'));return}const s=clipboard.data;const stay={...s,id:'stay_'+Date.now()};toast(_t('searchingCoords'));geocode(stay.city).then(ll=>{stay.cityLat=ll;trip.stays.push(stay);clipboard=null;saveTrips();renderTripDetail();drawMap();toast(_t('stayPasted'))})}
 function moveSegment(tripId,segId,dir){
-  const trip=trips.find(t=>t.id===tripId);if(!trip)return;const segs=trip.segments;const idx=segs.findIndex(s=>s.id===segId);if(idx===-1)return;const n=idx+dir;if(n<0||n>=segs.length)return;[segs[idx],segs[n]]=[segs[n],segs[idx]];segs.forEach((s,i)=>s.order=i);saveTrips();renderTripDetail();drawMap();toast('Sıra değiştirildi')
+  const trip=trips.find(t=>t.id===tripId);if(!trip)return;const segs=trip.segments;const idx=segs.findIndex(s=>s.id===segId);if(idx===-1)return;const n=idx+dir;if(n<0||n>=segs.length)return;[segs[idx],segs[n]]=[segs[n],segs[idx]];segs.forEach((s,i)=>s.order=i);saveTrips();renderTripDetail();drawMap();toast(_t('orderChanged'))
 }
 function selectSegTransport(type,el){addSegTransport=type;document.querySelectorAll('#addSegTransport .transport-btn').forEach(b=>b.classList.remove('selected'));el.classList.add('selected')}
 async function addSegment(){
   const trip=trips.find(t=>t.id===activeTripId);if(!trip)return;
   const from=document.getElementById('seg-from').value.trim();const to=document.getElementById('seg-to').value.trim();
-  if(!to){toast('Varış şehri zorunlu!');return}if(!addSegTransport){toast('Ulaşım türü seçin!');return}
+  if(!to){toast(_t('arrivalRequired'));return}if(!addSegTransport){toast(_t('selectType'));return}
   const lastSeg=trip.segments.length?trip.segments[trip.segments.length-1]:null;const fromCity=from||(lastSeg?lastSeg.to:'');
-  if(!fromCity){toast('Kalkış şehri gerekli!');return}
+  if(!fromCity){toast(_t('departureRequired'));return}
   const seg={id:'seg_'+Date.now(),order:trip.segments.length,type:addSegTransport,from:fromCity,to,provider:document.getElementById('seg-provider').value.trim(),date:document.getElementById('seg-date').value.trim(),duration:document.getElementById('seg-duration').value.trim(),price:document.getElementById('seg-price').value.replace(',','.'),currency:document.getElementById('seg-currency').value,note:document.getElementById('seg-note').value.trim(),passengers:parseInt(document.getElementById('seg-passengers').value)||1,fromLL:null,toLL:null};
-  toast('Koordinatlar aranıyor...');const[f,t]=await Promise.all([geocode(fromCity),geocode(to)]);seg.fromLL=f;seg.toLL=t;
-  trip.segments.push(seg);saveTrips();clearSegForm();renderTripDetail();drawMap();toast('Segment eklendi ✓')
+  toast(_t('searchingCoords'));const[f,t]=await Promise.all([geocode(fromCity),geocode(to)]);seg.fromLL=f;seg.toLL=t;
+  trip.segments.push(seg);saveTrips();clearSegForm();renderTripDetail();drawMap();toast(_t('segmentAdded'))
 }
 function clearSegForm(){
   ['seg-to','seg-provider','seg-date','seg-duration','seg-price','seg-note'].forEach(id=>document.getElementById(id).value='');
@@ -558,108 +797,159 @@ function clearSegForm(){
 }
 function openEditSeg(tripId,segId){
   const trip=trips.find(t=>t.id===tripId);if(!trip)return;const seg=(trip.segments||[]).find(s=>s.id===segId);if(!seg)return;editingSegKey={tripId,segId};
-  document.getElementById('editSegFormBody').innerHTML='<div style="display:flex;flex-direction:column;gap:10px"><div class="form-group"><div class="section-title">Ulaşım Türü</div><div class="transport-grid" id="editSegTransport">'+Object.entries(T).map(([k,v])=>'<button class="transport-btn'+(seg.type===k?' selected':'')+'" onclick="document.querySelectorAll(\'#editSegTransport .transport-btn\').forEach(b=>b.classList.remove(\'selected\'));this.classList.add(\'selected\');document.getElementById(\'edit-seg-type\').value=\''+k+'\'"><span class="icon">'+v.icon+'</span>'+v.label+'</button>').join('')+'</div><input type="hidden" id="edit-seg-type" value="'+seg.type+'"></div><div class="form-row"><div class="form-group"><label class="form-label">Kalkış</label><input type="text" id="edit-seg-from" value="'+esc(seg.from)+'"></div><div class="form-group"><label class="form-label">Varış</label><input type="text" id="edit-seg-to" value="'+esc(seg.to)+'"></div></div><div class="form-row"><div class="form-group"><label class="form-label">Sağlayıcı</label><input type="text" id="edit-seg-provider" value="'+esc(seg.provider||'')+'"></div><div class="form-group"><label class="form-label">Fiyat</label><div class="currency-row"><select id="edit-seg-currency">'+['€','₺','$','£'].map(c=>'<option'+(seg.currency===c?' selected':'')+'>'+c+'</option>').join('')+'</select><input type="text" inputmode="decimal" id="edit-seg-price" value="'+(seg.price||'')+'"></div></div></div><div class="form-row"><div class="form-group"><label class="form-label">Tarih</label><input type="text" id="edit-seg-date" value="'+esc(seg.date||'')+'"></div><div class="form-group"><label class="form-label">Süre</label><input type="text" id="edit-seg-duration" value="'+esc(seg.duration||'')+'"></div></div><div class="form-row"><div class="form-group"><label class="form-label">Kişi Sayısı</label><input type="number" id="edit-seg-passengers" value="'+(seg.passengers||1)+'" min="1" max="20"></div><div class="form-group"><label class="form-label">Not</label><input type="text" id="edit-seg-note" value="'+esc(seg.note||'')+'"></div></div></div>';document.getElementById('editSegModal').classList.add('open')
+  document.getElementById('editSegFormBody').innerHTML='<div style="display:flex;flex-direction:column;gap:10px"><div class="form-group"><div class="section-title">'+_t('transport')+'</div><div class="transport-grid" id="editSegTransport">'+Object.entries(T).map(([k,v])=>'<button class="transport-btn'+(seg.type===k?' selected':'')+'" onclick="document.querySelectorAll(\'#editSegTransport .transport-btn\').forEach(b=>b.classList.remove(\'selected\'));this.classList.add(\'selected\');document.getElementById(\'edit-seg-type\').value=\''+k+'\'"><span class="icon">'+v.icon+'</span>'+_t('tp_'+k)+'</button>').join('')+'</div><input type="hidden" id="edit-seg-type" value="'+seg.type+'"></div><div class="form-row"><div class="form-group"><label class="form-label">'+_t('departure')+'</label><input type="text" id="edit-seg-from" value="'+esc(seg.from)+'"></div><div class="form-group"><label class="form-label">'+_t('arrival')+'</label><input type="text" id="edit-seg-to" value="'+esc(seg.to)+'"></div></div><div class="form-row"><div class="form-group"><label class="form-label">'+_t('provider')+'</label><input type="text" id="edit-seg-provider" value="'+esc(seg.provider||'')+'"></div><div class="form-group"><label class="form-label">'+_t('price')+'</label><div class="currency-row"><select id="edit-seg-currency">'+['€','₺','$','£'].map(c=>'<option'+(seg.currency===c?' selected':'')+'>'+c+'</option>').join('')+'</select><input type="text" inputmode="decimal" id="edit-seg-price" value="'+(seg.price||'')+'"></div></div></div><div class="form-row"><div class="form-group"><label class="form-label">'+_t('date')+'</label><input type="text" id="edit-seg-date" value="'+esc(seg.date||'')+'"></div><div class="form-group"><label class="form-label">'+_t('duration')+'</label><input type="text" id="edit-seg-duration" value="'+esc(seg.duration||'')+'"></div></div><div class="form-row"><div class="form-group"><label class="form-label">'+_t('passengers')+'</label><input type="number" id="edit-seg-passengers" value="'+(seg.passengers||1)+'" min="1" max="20"></div><div class="form-group"><label class="form-label">'+_t('note')+'</label><input type="text" id="edit-seg-note" value="'+esc(seg.note||'')+'"></div></div></div>';document.getElementById('editSegModal').classList.add('open')
 }
 async function confirmEditSeg(){
   if(!editingSegKey)return;const{tripId,segId}=editingSegKey;const trip=trips.find(t=>t.id===tripId);if(!trip)return;const idx=(trip.segments||[]).findIndex(s=>s.id===segId);if(idx===-1)return;const seg=trip.segments[idx];const nF=document.getElementById('edit-seg-from').value.trim();const nT=document.getElementById('edit-seg-to').value.trim();const gn=nF!==seg.from||nT!==seg.to;
   trip.segments[idx]={...seg,type:document.getElementById('edit-seg-type').value,from:nF,to:nT,provider:document.getElementById('edit-seg-provider').value.trim(),price:document.getElementById('edit-seg-price').value.replace(',','.'),currency:document.getElementById('edit-seg-currency').value,date:document.getElementById('edit-seg-date').value.trim(),duration:document.getElementById('edit-seg-duration').value.trim(),note:document.getElementById('edit-seg-note').value.trim(),passengers:parseInt(document.getElementById('edit-seg-passengers').value)||1};
-  if(gn){toast('Koordinatlar güncelleniyor...');const[f,t]=await Promise.all([geocode(nF),geocode(nT)]);trip.segments[idx].fromLL=f;trip.segments[idx].toLL=t}
-  saveTrips();cm('editSegModal');editingSegKey=null;renderTripDetail();drawMap();toast('Segment güncellendi ✓')
+  if(gn){toast(_t('coordsUpdating'));const[f,t]=await Promise.all([geocode(nF),geocode(nT)]);trip.segments[idx].fromLL=f;trip.segments[idx].toLL=t}
+  saveTrips();cm('editSegModal');editingSegKey=null;renderTripDetail();drawMap();toast(_t('segmentUpdated'))
 }
-function confirmDeleteSeg(tripId,segId){const trip=trips.find(t=>t.id===tripId);const seg=(trip.segments||[]).find(s=>s.id===segId);document.getElementById('deleteModalTitle').textContent='Segmenti sil?';document.getElementById('deleteModalMsg').textContent='"'+seg.from+' → '+seg.to+'" segmenti silinecek.';document.getElementById('deleteConfirmBtn').onclick=()=>deleteSeg(tripId,segId);document.getElementById('deleteModal').classList.add('open')}
-function deleteSeg(tripId,segId){const trip=trips.find(t=>t.id===tripId);if(!trip)return;trip.segments=(trip.segments||[]).filter(s=>s.id!==segId);trip.segments.forEach((s,i)=>s.order=i);saveTrips();cm('deleteModal');renderTripDetail();drawMap();toast('Segment silindi')}
+function confirmDeleteSeg(tripId,segId){const trip=trips.find(t=>t.id===tripId);const seg=(trip.segments||[]).find(s=>s.id===segId);document.getElementById('deleteModalTitle').textContent=_t('deleteSegConfirm',{f:seg.from,t:seg.to});document.getElementById('deleteModalMsg').textContent='';document.getElementById('deleteConfirmBtn').onclick=()=>deleteSeg(tripId,segId);document.getElementById('deleteModal').classList.add('open')}
+function deleteSeg(tripId,segId){const trip=trips.find(t=>t.id===tripId);if(!trip)return;trip.segments=(trip.segments||[]).filter(s=>s.id!==segId);trip.segments.forEach((s,i)=>s.order=i);saveTrips();cm('deleteModal');renderTripDetail();drawMap();toast(_t('segmentDeleted'))}
 
 // ─── STAY CRUD ───────────────────────────────────────────────────────────────
 async function addStay(){
   try {
     const trip=trips.find(t=>t.id===activeTripId);if(!trip)return;
     const name=document.getElementById('stay-name').value.trim();const city=document.getElementById('stay-city').value.trim();
-    if(!name){toast('Konaklama adı zorunlu!');return}if(!city){toast('Şehir zorunlu!');return}
+    if(!name){toast(_t('nameRequired'));return}if(!city){toast(_t('cityRequired'));return}
     const stay={id:'stay_'+Date.now(),name,city,checkIn:document.getElementById('stay-checkin').value.trim(),checkOut:document.getElementById('stay-checkout').value.trim(),nights:parseInt(document.getElementById('stay-nights').value)||1,price:document.getElementById('stay-price').value.replace(',','.'),currency:document.getElementById('stay-currency').value,passengers:parseInt(document.getElementById('stay-passengers').value)||1,note:document.getElementById('stay-note').value.trim(),cityLat:null};
-    toast('Koordinat aranıyor...');const ll=await geocode(city);stay.cityLat=ll;
-    trip.stays.push(stay);saveTrips();clearStayForm();renderTripDetail();drawMap();toast('Konaklama eklendi ✓')
-  } catch(e){toast('Hata: '+e.message)}
+    toast(_t('searchingCoords'));const ll=await geocode(city);stay.cityLat=ll;
+    trip.stays.push(stay);saveTrips();clearStayForm();renderTripDetail();drawMap();toast(_t('stayAdded'))
+  } catch(e){toast(_t('error')+e.message)}
 }
 function clearStayForm(){['stay-name','stay-city','stay-checkin','stay-checkout','stay-price','stay-note'].forEach(id=>document.getElementById(id).value='');document.getElementById('stay-nights').value='1';document.getElementById('stay-passengers').value='1'}
 function openEditStay(tripId,stayId){
   const trip=trips.find(t=>t.id===tripId);if(!trip)return;const stay=(trip.stays||[]).find(s=>s.id===stayId);if(!stay)return;editingStayId={tripId,stayId};
-  document.getElementById('editStayFormBody').innerHTML='<div style="display:flex;flex-direction:column;gap:10px"><div class="form-row"><div class="form-group"><label class="form-label">Konaklama Adı</label><input type="text" id="edit-stay-name" value="'+esc(stay.name)+'"></div><div class="form-group"><label class="form-label">Şehir</label><input type="text" id="edit-stay-city" value="'+esc(stay.city)+'"></div></div><div class="form-row"><div class="form-group"><label class="form-label">Giriş</label><input type="text" id="edit-stay-checkin" value="'+esc(stay.checkIn||'')+'"></div><div class="form-group"><label class="form-label">Çıkış</label><input type="text" id="edit-stay-checkout" value="'+esc(stay.checkOut||'')+'"></div></div><div class="form-row"><div class="form-group"><label class="form-label">Gece</label><input type="number" id="edit-stay-nights" value="'+(stay.nights||1)+'" min="1" max="90"></div><div class="form-group"><label class="form-label">Fiyat</label><div class="currency-row"><select id="edit-stay-currency">'+['€','₺','$','£'].map(c=>'<option'+(stay.currency===c?' selected':'')+'>'+c+'</option>').join('')+'</select><input type="text" inputmode="decimal" id="edit-stay-price" value="'+(stay.price||'')+'"></div></div></div><div class="form-row"><div class="form-group"><label class="form-label">Kişi Sayısı</label><input type="number" id="edit-stay-passengers" value="'+(stay.passengers||1)+'" min="1" max="20"></div><div class="form-group"><label class="form-label">Not</label><input type="text" id="edit-stay-note" value="'+esc(stay.note||'')+'"></div></div></div>';document.getElementById('editStayModal').classList.add('open')
+  document.getElementById('editStayFormBody').innerHTML='<div style="display:flex;flex-direction:column;gap:10px"><div class="form-row"><div class="form-group"><label class="form-label">'+_t('hotelName')+'</label><input type="text" id="edit-stay-name" value="'+esc(stay.name)+'"></div><div class="form-group"><label class="form-label">'+_t('city')+'</label><input type="text" id="edit-stay-city" value="'+esc(stay.city)+'"></div></div><div class="form-row"><div class="form-group"><label class="form-label">'+_t('checkIn')+'</label><input type="text" id="edit-stay-checkin" value="'+esc(stay.checkIn||'')+'"></div><div class="form-group"><label class="form-label">'+_t('checkOut')+'</label><input type="text" id="edit-stay-checkout" value="'+esc(stay.checkOut||'')+'"></div></div><div class="form-row"><div class="form-group"><label class="form-label">'+_t('nights')+'</label><input type="number" id="edit-stay-nights" value="'+(stay.nights||1)+'" min="1" max="90"></div><div class="form-group"><label class="form-label">'+_t('price')+'</label><div class="currency-row"><select id="edit-stay-currency">'+['€','₺','$','£'].map(c=>'<option'+(stay.currency===c?' selected':'')+'>'+c+'</option>').join('')+'</select><input type="text" inputmode="decimal" id="edit-stay-price" value="'+(stay.price||'')+'"></div></div></div><div class="form-row"><div class="form-group"><label class="form-label">'+_t('passengers')+'</label><input type="number" id="edit-stay-passengers" value="'+(stay.passengers||1)+'" min="1" max="20"></div><div class="form-group"><label class="form-label">'+_t('note')+'</label><input type="text" id="edit-stay-note" value="'+esc(stay.note||'')+'"></div></div></div>';document.getElementById('editStayModal').classList.add('open')
 }
 async function confirmEditStay(){
   if(!editingStayId)return;const{tripId,stayId}=editingStayId;const trip=trips.find(t=>t.id===tripId);if(!trip)return;const idx=(trip.stays||[]).findIndex(s=>s.id===stayId);if(idx===-1)return;const stay=trip.stays[idx];const nC=document.getElementById('edit-stay-city').value.trim();const gn=nC!==stay.city;
   trip.stays[idx]={...stay,name:document.getElementById('edit-stay-name').value.trim(),city:nC,checkIn:document.getElementById('edit-stay-checkin').value.trim(),checkOut:document.getElementById('edit-stay-checkout').value.trim(),nights:parseInt(document.getElementById('edit-stay-nights').value)||1,price:document.getElementById('edit-stay-price').value.replace(',','.'),currency:document.getElementById('edit-stay-currency').value,passengers:parseInt(document.getElementById('edit-stay-passengers').value)||1,note:document.getElementById('edit-stay-note').value.trim()};
-  if(gn){toast('Koordinat güncelleniyor...');trip.stays[idx].cityLat=await geocode(nC)}
-  saveTrips();cm('editStayModal');editingStayId=null;renderTripDetail();drawMap();toast('Konaklama güncellendi ✓')
+  if(gn){toast(_t('coordsUpdating'));trip.stays[idx].cityLat=await geocode(nC)}
+  saveTrips();cm('editStayModal');editingStayId=null;renderTripDetail();drawMap();toast(_t('stayUpdated'))
 }
-function confirmDeleteStay(tripId,stayId){const trip=trips.find(t=>t.id===tripId);const stay=(trip.stays||[]).find(s=>s.id===stayId);document.getElementById('deleteModalTitle').textContent='Konaklamayı sil?';document.getElementById('deleteModalMsg').textContent='"'+stay.name+'" konaklaması silinecek.';document.getElementById('deleteConfirmBtn').onclick=()=>deleteStay(tripId,stayId);document.getElementById('deleteModal').classList.add('open')}
-function deleteStay(tripId,stayId){const trip=trips.find(t=>t.id===tripId);if(!trip)return;trip.stays=(trip.stays||[]).filter(s=>s.id!==stayId);saveTrips();cm('deleteModal');renderTripDetail();drawMap();toast('Konaklama silindi')}
+function confirmDeleteStay(tripId,stayId){const trip=trips.find(t=>t.id===tripId);const stay=(trip.stays||[]).find(s=>s.id===stayId);document.getElementById('deleteModalTitle').textContent=_t('deleteStayConfirm',{n:stay.name});document.getElementById('deleteModalMsg').textContent='';document.getElementById('deleteConfirmBtn').onclick=()=>deleteStay(tripId,stayId);document.getElementById('deleteModal').classList.add('open')}
+function deleteStay(tripId,stayId){const trip=trips.find(t=>t.id===tripId);if(!trip)return;trip.stays=(trip.stays||[]).filter(s=>s.id!==stayId);saveTrips();cm('deleteModal');renderTripDetail();drawMap();toast(_t('stayDeleted'))}
 
 // ─── ATTRACTION CRUD ─────────────────────────────────────────────────────────
 function selectAttrCategory(cat,el){attrCategory=cat;document.querySelectorAll('#attrList .transport-btn').forEach(b=>b.classList.remove('selected'));if(el)el.classList.add('selected')}
 async function addAttraction(){
   const trip=trips.find(t=>t.id===activeTripId);if(!trip)return;
   const name=document.getElementById('attr-name').value.trim();const city=document.getElementById('attr-city').value.trim();
-  if(!name){toast('Mekan adı zorunlu!');return}if(!city){toast('Şehir zorunlu!');return}
-  if(!attrCategory){toast('Kategori seçin!');return}
+  if(!name){toast(_t('nameRequired'));return}if(!city){toast(_t('cityRequired'));return}
+  if(!attrCategory){toast(_t('selectCategory'));return}
   const attr={id:'attr_'+Date.now(),name,city,category:attrCategory,time:document.getElementById('attr-time').value,note:document.getElementById('attr-note').value.trim(),lat:null};
-  toast('Koordinat aranıyor...');const ll=await geocode(city);attr.lat=ll;
-  trip.attractions.push(attr);saveTrips();clearAttrForm();renderTripDetail();drawMap();toast('Mekan eklendi ✓')
+  toast(_t('searchingCoords'));const ll=await geocode(city);attr.lat=ll;
+  trip.attractions.push(attr);saveTrips();clearAttrForm();renderTripDetail();drawMap();toast(_t('attrAdded'))
 }
 function clearAttrForm(){document.getElementById('attr-name').value='';document.getElementById('attr-city').value='';document.getElementById('attr-time').value='';document.getElementById('attr-note').value='';attrCategory=null;document.querySelectorAll('#attrList .transport-btn').forEach(b=>b.classList.remove('selected'))}
 function openEditAttr(tripId,attrId){
   const trip=trips.find(t=>t.id===tripId);if(!trip)return;const attr=(trip.attractions||[]).find(a=>a.id===attrId);if(!attr)return;editingAttrId={tripId,attrId};
-  document.getElementById('editAttrFormBody').innerHTML='<div style="display:flex;flex-direction:column;gap:10px"><div class="form-group"><div class="section-title">Kategori</div><div style="display:flex;gap:4px">'+Object.entries(A).map(([k,v])=>'<button class="transport-btn'+(attr.category===k?' selected':'')+'" onclick="document.querySelectorAll(\'#editAttrFormBody .transport-btn\').forEach(b=>b.classList.remove(\'selected\'));this.classList.add(\'selected\');document.getElementById(\'edit-attr-category\').value=\''+k+'\'"><span class="icon">'+v.icon+'</span>'+v.label+'</button>').join('')+'</div><input type="hidden" id="edit-attr-category" value="'+attr.category+'"></div><div class="form-row"><div class="form-group"><label class="form-label">Mekan Adı</label><input type="text" id="edit-attr-name" value="'+esc(attr.name)+'"></div><div class="form-group"><label class="form-label">Şehir</label><input type="text" id="edit-attr-city" value="'+esc(attr.city)+'"></div></div><div class="form-row"><div class="form-group"><label class="form-label">Saat</label><input type="time" id="edit-attr-time" value="'+esc(attr.time||'')+'"></div><div class="form-group"><label class="form-label">Not</label><input type="text" id="edit-attr-note" value="'+esc(attr.note||'')+'"></div></div></div>';document.getElementById('editAttrModal').classList.add('open')
+  document.getElementById('editAttrFormBody').innerHTML='<div style="display:flex;flex-direction:column;gap:10px"><div class="form-group"><div class="section-title">'+_t('selectCategory')+'</div><div style="display:flex;gap:4px">'+Object.entries(A).map(([k,v])=>'<button class="transport-btn'+(attr.category===k?' selected':'')+'" onclick="document.querySelectorAll(\'#editAttrFormBody .transport-btn\').forEach(b=>b.classList.remove(\'selected\'));this.classList.add(\'selected\');document.getElementById(\'edit-attr-category\').value=\''+k+'\'"><span class="icon">'+v.icon+'</span>'+_t('cat_'+k)+'</button>').join('')+'</div><input type="hidden" id="edit-attr-category" value="'+attr.category+'"></div><div class="form-row"><div class="form-group"><label class="form-label">'+_t('attrName')+'</label><input type="text" id="edit-attr-name" value="'+esc(attr.name)+'"></div><div class="form-group"><label class="form-label">'+_t('city')+'</label><input type="text" id="edit-attr-city" value="'+esc(attr.city)+'"></div></div><div class="form-row"><div class="form-group"><label class="form-label">'+_t('time')+'</label><input type="time" id="edit-attr-time" value="'+esc(attr.time||'')+'"></div><div class="form-group"><label class="form-label">'+_t('note')+'</label><input type="text" id="edit-attr-note" value="'+esc(attr.note||'')+'"></div></div></div>';document.getElementById('editAttrModal').classList.add('open')
 }
 async function confirmEditAttr(){
   if(!editingAttrId)return;const{tripId,attrId}=editingAttrId;const trip=trips.find(t=>t.id===tripId);if(!trip)return;const idx=(trip.attractions||[]).findIndex(a=>a.id===attrId);if(idx===-1)return;const attr=trip.attractions[idx];const nC=document.getElementById('edit-attr-city').value.trim();const gn=nC!==attr.city;
   trip.attractions[idx]={...attr,name:document.getElementById('edit-attr-name').value.trim(),city:nC,category:document.getElementById('edit-attr-category').value,time:document.getElementById('edit-attr-time').value,note:document.getElementById('edit-attr-note').value.trim()};
-  if(gn){toast('Koordinat güncelleniyor...');trip.attractions[idx].lat=await geocode(nC)}
-  saveTrips();cm('editAttrModal');editingAttrId=null;renderTripDetail();drawMap();toast('Mekan güncellendi ✓')
+  if(gn){toast(_t('coordsUpdating'));trip.attractions[idx].lat=await geocode(nC)}
+  saveTrips();cm('editAttrModal');editingAttrId=null;renderTripDetail();drawMap();toast(_t('attrUpdated'))
 }
-function confirmDeleteAttr(tripId,attrId){const trip=trips.find(t=>t.id===tripId);const attr=(trip.attractions||[]).find(a=>a.id===attrId);document.getElementById('deleteModalTitle').textContent='Mekanı sil?';document.getElementById('deleteModalMsg').textContent='"'+attr.name+'" mekanı silinecek.';document.getElementById('deleteConfirmBtn').onclick=()=>deleteAttr(tripId,attrId);document.getElementById('deleteModal').classList.add('open')}
-function deleteAttr(tripId,attrId){const trip=trips.find(t=>t.id===tripId);if(!trip)return;trip.attractions=(trip.attractions||[]).filter(a=>a.id!==attrId);saveTrips();cm('deleteModal');renderTripDetail();drawMap();toast('Mekan silindi')}
-function copyAttr(tripId,attrId){const trip=trips.find(t=>t.id===tripId);if(!trip)return;const attr=(trip.attractions||[]).find(a=>a.id===attrId);if(!attr)return;clipboard={type:'attr',data:{...attr}};renderTripDetail();toast('Mekan kopyalandı 📄')}
-function pasteAttr(){if(!clipboard||clipboard.type!=='attr'){toast('Kopyalanmış mekan yok');return}const trip=trips.find(t=>t.id===activeTripId);if(!trip){toast('Önce bir seyahat açın');return}const s=clipboard.data;const attr={...s,id:'attr_'+Date.now()};toast('Koordinat aranıyor...');geocode(attr.city).then(ll=>{attr.lat=ll;trip.attractions.push(attr);clipboard=null;saveTrips();renderTripDetail();drawMap();toast('Mekan yapıştırıldı ✓')})}
+function confirmDeleteAttr(tripId,attrId){const trip=trips.find(t=>t.id===tripId);const attr=(trip.attractions||[]).find(a=>a.id===attrId);document.getElementById('deleteModalTitle').textContent=_t('deleteAttrConfirm',{n:attr.name});document.getElementById('deleteModalMsg').textContent='';document.getElementById('deleteConfirmBtn').onclick=()=>deleteAttr(tripId,attrId);document.getElementById('deleteModal').classList.add('open')}
+function deleteAttr(tripId,attrId){const trip=trips.find(t=>t.id===tripId);if(!trip)return;trip.attractions=(trip.attractions||[]).filter(a=>a.id!==attrId);saveTrips();cm('deleteModal');renderTripDetail();drawMap();toast(_t('attrDeleted'))}
+function copyAttr(tripId,attrId){const trip=trips.find(t=>t.id===tripId);if(!trip)return;const attr=(trip.attractions||[]).find(a=>a.id===attrId);if(!attr)return;clipboard={type:'attr',data:{...attr}};renderTripDetail();toast(_t('attrCopied'))}
+function pasteAttr(){if(!clipboard||clipboard.type!=='attr'){toast(_t('noCopiedAttr'));return}const trip=trips.find(t=>t.id===activeTripId);if(!trip){toast(_t('openTripFirst'));return}const s=clipboard.data;const attr={...s,id:'attr_'+Date.now()};toast(_t('searchingCoords'));geocode(attr.city).then(ll=>{attr.lat=ll;trip.attractions.push(attr);clipboard=null;saveTrips();renderTripDetail();drawMap();toast(_t('attrPasted'))})}
 async function retryAttrGeocode(tripId,attrId){
   const trip=trips.find(t=>t.id===tripId);if(!trip)return;const attr=(trip.attractions||[]).find(a=>a.id===attrId);if(!attr)return;
-  toast('Koordinat aranıyor...');const ll=await geocode(attr.city);
-  if(ll){attr.lat=ll;saveTrips();renderTripDetail();drawMap();toast('Koordinat güncellendi ✓')}else{toast('Koordinat bulunamadı. Şehir adını kontrol edin.')}
+  toast(_t('searchingCoords'));const ll=await geocode(attr.city);
+  if(ll){attr.lat=ll;saveTrips();renderTripDetail();drawMap();toast(_t('coordsUpdated'))}else{toast(_t('coordsNotFound'))}
 }
 
 // ─── SET ALL PASSENGERS ──────────────────────────────────────────────────────
 function setAllPassengers(tripId){
   const trip=trips.find(t=>t.id===tripId);if(!trip||!((trip.segments||[]).length||(trip.stays||[]).length))return;
   const first=(trip.segments||[])[0]||(trip.stays||[])[0];const cur=first.passengers||1;
-  const val=prompt('Tüm ulaşım ve konaklama için kişi sayısı:',cur);if(val===null)return;
-  const num=parseInt(val);if(!num||num<1||num>99){toast('Geçerli bir sayı girin (1-99)');return}
+  const val=prompt(_t('promptPassengers'),cur);if(val===null)return;
+  const num=parseInt(val);if(!num||num<1||num>99){toast(_t('validNumber'));return}
   (trip.segments||[]).forEach(s=>s.passengers=num);(trip.stays||[]).forEach(s=>s.passengers=num);
-  saveTrips();renderTripDetail();drawMap();toast('Tümü '+num+' kişi olarak ayarlandı ✓')
+  saveTrips();renderTripDetail();drawMap();toast(_t('allSet',{n:num}))
 }
 
 // ─── TRIP CRUD ───────────────────────────────────────────────────────────────
 function createNewTrip(){document.getElementById('newTripTitle').value='';document.getElementById('newTripModal').classList.add('open');setTimeout(()=>document.getElementById('newTripTitle').focus(),100)}
-function confirmNewTrip(){const t=document.getElementById('newTripTitle').value.trim();if(!t){toast('Seyahat adı girin!');return}const trip={id:'trip_'+Date.now(),title:t,visible:true,createdAt:new Date().toISOString(),segments:[],stays:[],attractions:[]};trips.push(trip);saveTrips();cm('newTripModal');openTripDetail(trip.id);toast('Seyahat oluşturuldu ✓')}
+function confirmNewTrip(){const t=document.getElementById('newTripTitle').value.trim();if(!t){toast(_t('titleRequired'));return}const trip={id:'trip_'+Date.now(),title:t,visible:true,createdAt:new Date().toISOString(),segments:[],stays:[],attractions:[]};trips.push(trip);saveTrips();cm('newTripModal');openTripDetail(trip.id);toast(_t('tripCreated'))}
 function editTripTitle(tripId){const trip=trips.find(t=>t.id===tripId);if(!trip)return;editingTripId=tripId;document.getElementById('editTripTitleInput').value=trip.title;document.getElementById('editTripModal').classList.add('open');setTimeout(()=>document.getElementById('editTripTitleInput').focus(),100)}
-function confirmEditTrip(){const t=document.getElementById('editTripTitleInput').value.trim();if(!t){toast('Seyahat adı girin!');return}const trip=trips.find(t=>t.id===editingTripId);if(trip){trip.title=t;saveTrips();renderTrips();if(activeTripId)renderTripDetail();toast('Seyahat adı güncellendi')}cm('editTripModal');editingTripId=null}
-function confirmDeleteTrip(tripId){const trip=trips.find(t=>t.id===tripId);document.getElementById('deleteModalTitle').textContent='Seyahati sil?';document.getElementById('deleteModalMsg').textContent='"'+trip.title+'" seyahati ve tüm segmentleri/konaklamaları/mekanları silinecek.';document.getElementById('deleteConfirmBtn').onclick=()=>deleteTrip(tripId);document.getElementById('deleteModal').classList.add('open')}
-function deleteTrip(tripId){trips=trips.filter(t=>t.id!==tripId);saveTrips();cm('deleteModal');if(activeTripId===tripId){activeTripId=null;goToTrips()}else renderTrips();drawMap();toast('Seyahat silindi')}
+function confirmEditTrip(){const t=document.getElementById('editTripTitleInput').value.trim();if(!t){toast(_t('titleRequired'));return}const trip=trips.find(t=>t.id===editingTripId);if(trip){trip.title=t;saveTrips();renderTrips();if(activeTripId)renderTripDetail();toast(_t('tripUpdated'))}cm('editTripModal');editingTripId=null}
+function confirmDeleteTrip(tripId){const trip=trips.find(t=>t.id===tripId);document.getElementById('deleteModalTitle').textContent=_t('deleteConfirmTitle');document.getElementById('deleteModalMsg').textContent=_t('deleteConfirmMsg',{t:trip.title});document.getElementById('deleteConfirmBtn').onclick=()=>deleteTrip(tripId);document.getElementById('deleteModal').classList.add('open')}
+function deleteTrip(tripId){trips=trips.filter(t=>t.id!==tripId);saveTrips();cm('deleteModal');if(activeTripId===tripId){activeTripId=null;goToTrips()}else renderTrips();drawMap();toast(_t('tripDeleted'))}
 function toggleTripVisibility(tripId){const trip=trips.find(t=>t.id===tripId);if(!trip)return;trip.visible=trip.visible===false?true:false;saveTrips();drawMap();updateOverallTotal()}
-function duplicateTrip(tripId){const src=trips.find(t=>t.id===tripId);if(!src)return;const trip={id:'trip_'+Date.now(),title:src.title+' (Kopya)',visible:true,createdAt:new Date().toISOString(),segments:src.segments.map(s=>({...s,id:'seg_'+Date.now()+'_'+Math.random().toString(36).slice(2,6)})),stays:src.stays.map(s=>({...s,id:'stay_'+Date.now()+'_'+Math.random().toString(36).slice(2,6)})),attractions:src.attractions.map(s=>({...s,id:'attr_'+Date.now()+'_'+Math.random().toString(36).slice(2,6)}))};trips.push(trip);saveTrips();renderTrips();toast('Seyahat kopyalandı ✓')}
+function duplicateTrip(tripId){const src=trips.find(t=>t.id===tripId);if(!src)return;const trip={id:'trip_'+Date.now(),title:src.title+' ('+_t('duplicate')+')',visible:true,createdAt:new Date().toISOString(),segments:src.segments.map(s=>({...s,id:'seg_'+Date.now()+'_'+Math.random().toString(36).slice(2,6)})),stays:src.stays.map(s=>({...s,id:'stay_'+Date.now()+'_'+Math.random().toString(36).slice(2,6)})),attractions:src.attractions.map(s=>({...s,id:'attr_'+Date.now()+'_'+Math.random().toString(36).slice(2,6)}))};trips.push(trip);saveTrips();renderTrips();toast(_t('tripDuplicated'))}
 
 // ─── MAP FLY ─────────────────────────────────────────────────────────────────
 function flyTo(tripId,segId){const trip=trips.find(t=>t.id===tripId);if(!trip)return;const seg=(trip.segments||[]).find(s=>s.id===segId);if(!seg||!seg.fromLL||!seg.toLL)return;map.fitBounds(L.latLngBounds([seg.fromLL,seg.toLL]),{padding:[60,60]});const k='line_'+tripId+'_'+segId;if(mapLayers[k])mapLayers[k].openPopup()}
 
 // ─── IMPORT / EXPORT ─────────────────────────────────────────────────────────
-function exportData(){const data={trips,settings,exportedAt:new Date().toISOString()};const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(data,null,2)],{type:'application/json'}));a.download='routelog-'+new Date().toISOString().slice(0,10)+'.json';a.click();toast('Dışa aktarıldı ✓')}
-function importData(e){const file=e.target.files[0];if(!file)return;const r=new FileReader();r.onload=ev=>{try{const d=JSON.parse(ev.target.result);if(d.trips){d.trips.forEach(t=>{if(!t.attractions)t.attractions=[]});trips=d.trips;saveTrips();goToTrips();drawMap();toast(trips.length+' seyahat içe aktarıldı ✓')}else if(d.routes){const trip={id:'trip_'+Date.now(),title:'İçe Aktarılan Seyahat',createdAt:new Date().toISOString(),segments:d.routes.map((x,i)=>({...x,order:i,id:x.id||'seg_'+Date.now()+'_'+i,passengers:x.passengers||1})),stays:[],attractions:[]};trips.push(trip);saveTrips();goToTrips();drawMap();toast(d.routes.length+' segment içe aktarıldı ✓')}}catch{toast('Dosya okunamadı!')}};r.readAsText(file);e.target.value=''}
+function exportData(){const data={trips,settings,exportedAt:new Date().toISOString()};const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(data,null,2)],{type:'application/json'}));a.download='routelog-'+new Date().toISOString().slice(0,10)+'.json';a.click();toast(_t('exportDone'))}
+function importData(e){const file=e.target.files[0];if(!file)return;const r=new FileReader();r.onload=ev=>{try{const d=JSON.parse(ev.target.result);if(d.trips){d.trips.forEach(t=>{if(!t.attractions)t.attractions=[]});trips=d.trips;saveTrips();goToTrips();drawMap();toast(_t('importDone',{n:trips.length}))}else if(d.routes){const trip={id:'trip_'+Date.now(),title:_t('importBtn')+' '+_t('tripOpen'),createdAt:new Date().toISOString(),segments:d.routes.map((x,i)=>({...x,order:i,id:x.id||'seg_'+Date.now()+'_'+i,passengers:x.passengers||1})),stays:[],attractions:[]};trips.push(trip);saveTrips();goToTrips();drawMap();toast(_t('importSegs',{n:d.routes.length}))}}catch{toast(_t('importNoFile'))}};r.readAsText(file);e.target.value=''}
 
 // ─── CLEAR ALL ───────────────────────────────────────────────────────────────
-function confirmClearAll(){document.getElementById('deleteModalTitle').textContent='Tüm verileri sil?';document.getElementById('deleteModalMsg').textContent='Tüm seyahatler, segmentler, konaklamalar ve mekanlar silinecek.';document.getElementById('deleteConfirmBtn').onclick=()=>{trips=[];saveTrips();cm('deleteModal');goToTrips();drawMap();toast('Tüm veriler silindi')};document.getElementById('deleteModal').classList.add('open')}
+function confirmClearAll(){document.getElementById('deleteModalTitle').textContent=_t('clearAllTitle');document.getElementById('deleteModalMsg').textContent=_t('clearAllMsg');document.getElementById('deleteConfirmBtn').onclick=()=>{trips=[];saveTrips();cm('deleteModal');goToTrips();drawMap();toast(_t('clearAllDone'))};document.getElementById('deleteModal').classList.add('open')}
+
+// ─── SETTINGS UI ──────────────────────────────────────────────────────────────
+function renderSettings(){
+  document.getElementById('settingsContent').innerHTML=
+    '<div class="form-group"><div class="section-title">'+_t('mapStyle')+'</div>'+
+    '<select id="mapStyleSelect" onchange="changeMapStyle()">'+
+    '<option value="light">'+_t('light')+'</option>'+
+    '<option value="dark">'+_t('dark')+'</option>'+
+    '<option value="streets">'+_t('streets')+'</option>'+
+    '<option value="satellite">'+_t('satellite')+'</option>'+
+    '</select></div>'+
+    '<div class="form-group"><div class="section-title">'+_t('defaultCurrency')+'</div>'+
+    '<select id="defaultCurrency" onchange="saveSettings()">'+
+    '<option value="€">€ EUR</option><option value="₺">₺ TRY</option><option value="$">$ USD</option><option value="£">£ GBP</option>'+
+    '</select></div>'+
+    '<div class="form-group"><div class="section-title">'+_t('language')+'</div>'+
+    '<select id="langSelect" onchange="changeLang()">'+
+    '<option value="tr">Türkçe</option><option value="en">English</option><option value="de">Deutsch</option>'+
+    '</select></div>'+
+    '<div class="divider"></div>'+
+    '<div class="section-title">'+_t('dataManagement')+'</div>'+
+    '<button class="btn" style="width:100%;justify-content:center" onclick="exportData()">⬇ '+_t('exportJson')+'</button>'+
+    '<button class="btn" style="width:100%;justify-content:center" onclick="document.getElementById(\'importFile\').click()">⬆ '+_t('importJson')+'</button>'+
+    '<button class="btn btn-danger" style="width:100%;justify-content:center" onclick="confirmClearAll()">🗑 '+_t('deleteAll')+'</button>'+
+    '<div style="font-size:11px;color:var(--text3);line-height:1.7;padding:8px 0">'+_t('dataInfo').replace('\\n','<br>')+'</div>';
+}
+function changeLang(){
+  settings.lang=document.getElementById('langSelect').value;
+  saveSettings();renderSettings();
+  document.getElementById('mapStyleSelect').value=settings.mapStyle;
+  document.getElementById('langSelect').value=settings.lang;
+  document.getElementById('defaultCurrency').value=settings.defaultCurrency;
+  translateUI();renderTrips();if(activeTripId)renderTripDetail();drawMap();
+}
+function translateUI(){
+  document.title=_t('appSubtitle');
+  const te=(id,k)=>{const e=document.getElementById(id);if(e)e.textContent=_t(k||id)};
+  te('appSubtitle');te('exportBtnLabel','exportBtn');te('importBtnLabel','importBtn');
+  te('deleteAllBtnLabel','deleteAll');te('loginBtnLabel','login');te('logoutBtn','logout');te('stabTrips','myTrips');te('stabSettings','settings');
+  te('myTripsTitle','myTrips');te('newTripBtn','newTrip');
+  te('newTripModalTitle','newTrip');te('newTripLabel','tripTitle');
+  document.getElementById('newTripTitle').placeholder=_t('newTripPlaceholder');
+  te('newTripCancel','cancel');te('newTripCreate','create');
+  te('editTripModalTitle','editTripName');te('editTripLabel','tripTitle');
+  te('editTripCancel','cancel');te('editTripSave','save');
+  te('editSegModalTitle','editSegment');te('editSegCancel','cancel');te('editSegSave','save');
+  te('editStayModalTitle','editStay');te('editStayCancel','cancel');te('editStaySave','save');
+  te('editAttrModalTitle','editAttr');te('editAttrCancel','cancel');te('editAttrSave','save');
+  te('deleteCancel','cancel');te('deleteConfirmLabel','delete');
+}
 
 // ─── INIT ─────────────────────────────────────────────────────────────────────
-window.addEventListener('DOMContentLoaded',()=>{
-  loadData();const m=migrateLegacyData();initMap();if(m)toast('Eski rotalar içe aktarıldı ✓');renderTrips();drawMap()
-  ;document.getElementById('defaultCurrency').value=settings.defaultCurrency;document.getElementById('mapStyleSelect').value=settings.mapStyle
+window.addEventListener('DOMContentLoaded',async()=>{
+  db=await openDB();await loadData();const m=migrateLegacyData();initMap();if(m)toast(_t('migrated'))
+  ;renderSettings();document.getElementById('defaultCurrency').value=settings.defaultCurrency;document.getElementById('mapStyleSelect').value=settings.mapStyle;document.getElementById('langSelect').value=settings.lang
+  ;translateUI();renderTrips();drawMap()
   ;setTimeout(()=>map.invalidateSize(),200);window.addEventListener('resize',()=>map.invalidateSize())
 });
 </script>

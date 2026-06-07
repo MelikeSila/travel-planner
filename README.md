@@ -1,36 +1,55 @@
-# RouteLog - Seyahat Rota Planlayıcı
+# RouteLog - Trip Planner
 
-Vanilla JavaScript ile yapılmış, tek sayfalık seyahat rotası planlayıcı.
+A single-page trip route planner with Firebase Auth + Firestore sync.
 
-## Özellikler
+Live at: **https://REPLACED_PROJECT_ID.web.app**
 
-- **🗺️ Harita**: Leaflet + OpenStreetMap ile interaktif harita (4 harita stili)
-- **✈️ Ulaşım**: Uçak, tren, otobüs, araba ve daha fazlası için rota ekleme
-- **🏨 Konaklama**: Otel ve konaklama bilgisi girme
-- **📍 Aktiviteler**: Gezilecek, yemek ve görülecek yerleri kategorize etme
-- **💰 Toplam Maliyet**: Para birimi bazında otomatik hesaplama
-- **📋 Kopyala/Yapıştır**: Segment, konaklama ve mekanları seyahatler arası taşıma
-- **↕️ Sürükle-Bırak**: Seyahatleri ve segmentleri sıralama
-- **🕐 Saat Sıralaması**: Aktiviteleri saate göre sıralama ve haritada rota olarak gösterme
-- **🏷️ Akıllı Etiketler**: Hover'da veya zoom seviyesine göre şehir etiketlerini gösterme
-- **💾 Veri Saklama**: localStorage ile tarayıcıda kalıcı kayıt, JSON dışa/içe aktarma
-- **🔍 Koordinat Bulma**: Nominatim (OpenStreetMap) ile otomatik koordinat çözümleme
+## Features
 
-## Kullanım
+- **🗺️ Map**: Interactive map with Leaflet + OpenStreetMap (4 map styles)
+- **✈️ Transport**: Add routes for flights, trains, buses, cars and more
+- **🏨 Accommodation**: Enter hotel and accommodation information
+- **📍 Activities**: Categorize sights, food, and must-see places
+- **💰 Total Cost**: Automatic calculation per currency
+- **📋 Copy/Paste**: Move segments, stays, and places between trips
+- **↕️ Drag & Drop**: Reorder trips and segments
+- **🕐 Time Sorting**: Sort activities by time and show as route on map
+- **🏷️ Smart Labels**: Show city labels on hover or by zoom level
+- **💾 Data Storage**: IndexedDB + localStorage (offline), Firestore (cloud sync)
+- **🔍 Geocoding**: Automatic coordinate resolution via Nominatim (OpenStreetMap)
+- **🌐 Multi-language**: Turkish / English / German
+- **🔐 Firebase Auth**: Google sign-in, data syncs across devices
 
-1. `travel-planner.html` dosyasını tarayıcıda aç
-2. "Yeni Seyahat" butonuyla seyahat oluştur
-3. Seyahate tıkla, detay görünümünde ulaşım, konaklama ve aktivite ekle
-4. Haritada rotaları ve noktaları görüntüle
+## Usage
 
-## Teknolojiler
+1. Open the app at **https://REPLACED_PROJECT_ID.web.app** (or serve locally)
+2. Create a trip with the "New Trip" button
+3. Click on a trip, add transport, accommodation, and activities in the detail view
+4. View routes and points on the map
+5. Click "Giriş / Login" to sign in with Google — your data syncs to the cloud
+
+## Technologies
 
 - Vanilla JavaScript (ES6+)
 - Leaflet.js
 - OpenStreetMap / Nominatim
 - CSS Custom Properties
-- localStorage API
+- IndexedDB + localStorage
+- Firebase Auth + Firestore + Hosting
 
-## Lisans
+## Development
+
+Run locally:
+```bash
+python3 -m http.server 8000
+# or open travel-planner.html directly
+```
+
+Deploy:
+```bash
+firebase deploy
+```
+
+## License
 
 MIT
