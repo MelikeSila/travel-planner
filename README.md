@@ -39,13 +39,23 @@ Live at: **https://REPLACED_PROJECT_ID.web.app**
 
 ## Development
 
-Run locally:
+### Setup (first time)
+
+Copy `config.example.js` → `config.js` and fill in your Firebase values.
+Or use environment variables:
+```bash
+FIREBASE_API_KEY=... FIREBASE_AUTH_DOMAIN=... FIREBASE_PROJECT_ID=... \
+FIREBASE_STORAGE_BUCKET=... FIREBASE_MESSAGING_SENDER_ID=... FIREBASE_APP_ID=... \
+node setup.js
+```
+
+### Run locally
 ```bash
 python3 -m http.server 8000
 # or open travel-planner.html directly
 ```
 
-Deploy:
+### Deploy
 ```bash
 firebase deploy
 ```

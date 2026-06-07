@@ -8,6 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="config.js"></script>
 <script src="https://www.gstatic.com/firebasejs/12.14.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/12.14.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/12.14.0/firebase-firestore-compat.js"></script>
@@ -481,15 +482,7 @@ function stayCost(s){return p(s.price)}
 function allSegs(t){const r=[];(t.segments||[]).forEach(s=>r.push(s));(t.stays||[]).forEach(s=>r.push({...s,type:'stay'}));return r}
 
 // ─── FIREBASE ────────────────────────────────────────────────────────────────
-const firebaseConfig = {
-  apiKey: "REPLACED_API_KEY",
-  authDomain: "REPLACED_AUTH_DOMAIN",
-  projectId: "REPLACED_PROJECT_ID",
-  storageBucket: "REPLACED_PROJECT_ID.firebasestorage.app",
-  messagingSenderId: "REPLACED_SENDER_ID",
-  appId: "1:REPLACED_SENDER_ID:web:5c65bedb3bd2861533f418"
-};
-firebase.initializeApp(firebaseConfig);
+firebase.initializeApp(FIREBASE_CONFIG);
 const fireAuth = firebase.auth();
 firestoreDB = firebase.firestore();
 
