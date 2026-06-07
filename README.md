@@ -2,7 +2,7 @@
 
 A single-page trip route planner with Firebase Auth + Firestore sync.
 
-Live at: **https://REPLACED_PROJECT_ID.web.app**
+Live at: **https://travel-planner-40e9a.web.app**
 
 ## Features
 
@@ -22,7 +22,7 @@ Live at: **https://REPLACED_PROJECT_ID.web.app**
 
 ## Usage
 
-1. Open the app at **https://REPLACED_PROJECT_ID.web.app** (or serve locally)
+1. Open the app at **https://travel-planner-40e9a.web.app** (or serve locally)
 2. Create a trip with the "New Trip" button
 3. Click on a trip, add transport, accommodation, and activities in the detail view
 4. View routes and points on the map
