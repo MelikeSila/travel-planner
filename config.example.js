@@ -8,3 +8,11 @@ const FIREBASE_CONFIG = {
   messagingSenderId: "YOUR_SENDER_ID",
   appId: "YOUR_APP_ID"
 };
+
+// EmailJS configuration (for share notifications)
+// Sign up at https://www.emailjs.com/ then create a service + template
+const EMAILJS_CONFIG = {
+  publicKey: "YOUR_EMAILJS_PUBLIC_KEY",
+  serviceId: "YOUR_EMAILJS_SERVICE_ID",
+  templateId: "YOUR_EMAILJS_TEMPLATE_ID"
+};

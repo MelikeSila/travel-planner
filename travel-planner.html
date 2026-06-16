@@ -12,10 +12,12 @@
 <script src="https://www.gstatic.com/firebasejs/12.14.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/12.14.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/12.14.0/firebase-firestore-compat.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{height:100%}
 :root{--bg:#f5f3ee;--surface:#fff;--surface2:#f0ede6;--border:#e2ddd5;--border2:#ccc8be;--text:#1a1916;--text2:#6b6760;--text3:#9e9a93;--accent:#2563eb;--accent-light:#eff4ff;--green:#16a34a;--green-light:#f0fdf4;--amber:#d97706;--amber-light:#fffbeb;--red:#dc2626;--red-light:#fef2f2;--purple:#7c3aed;--purple-light:#f5f3ff;--teal:#0d9488;--teal-light:#f0fdfa;--radius:10px;--radius-sm:6px;--shadow:0 1px 3px rgba(0,0,0,.08),0 1px 2px rgba(0,0,0,.04);--shadow-lg:0 10px 25px rgba(0,0,0,.1),0 4px 10px rgba(0,0,0,.05)}
-body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex;flex-direction:column}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);height:100vh;display:flex;flex-direction:column;overflow:hidden}
 header{background:var(--surface);border-bottom:1px solid var(--border);padding:14px 24px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:1000}
 .header-left{display:flex;align-items:center;gap:10px}
 .logo-icon{width:32px;height:32px;background:var(--text);border-radius:8px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:16px}
@@ -32,7 +34,7 @@ header{background:var(--surface);border-bottom:1px solid var(--border);padding:1
 .btn-sm{padding:5px 10px;font-size:12px}
 .btn-ghost{background:transparent;border-color:transparent}
 .btn-ghost:hover{background:var(--surface2);border-color:var(--border)}
-.layout{display:grid;grid-template-columns:420px 1fr;flex:1;min-height:0;height:1px}
+.layout{display:grid;grid-template-columns:420px 1fr;flex:1;min-height:0;overflow:hidden}
 .sidebar{background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden}
 .sidebar-tabs{display:flex;border-bottom:1px solid var(--border);padding:0 16px}
 .stab{padding:12px 14px;font-size:13px;font-weight:500;color:var(--text3);cursor:pointer;border-bottom:2px solid transparent;transition:all .15s;white-space:nowrap}
@@ -69,6 +71,17 @@ textarea{resize:vertical;min-height:56px}
 .tc-meta{font-size:11px;color:var(--text3);margin-top:1px}
 .tc-total{font-size:16px;font-weight:600;font-family:'DM Mono',monospace;letter-spacing:-.02em;text-align:right;flex-shrink:0}
 .tc-actions{display:flex;gap:4px;margin-top:8px;padding-top:8px;border-top:1px solid var(--border)}
+.parent-section{margin-bottom:12px}
+.parent-header{padding:10px 14px;background:var(--surface2);border-radius:var(--radius);margin-bottom:8px}
+.parent-section.expanded .parent-header{border-radius:var(--radius) var(--radius) 0 0;margin-bottom:0}
+.parent-title{font-size:14px;font-weight:700;letter-spacing:-.01em;cursor:pointer;user-select:none;display:flex;align-items:center;gap:4px}
+.expand-icon{font-size:12px;color:var(--text3);width:14px;flex-shrink:0}
+.parent-sub{display:flex;flex-direction:column;gap:4px;margin-top:4px;padding-left:18px}
+.parent-total{font-size:13px;font-family:'DM Mono',monospace;font-weight:600;color:var(--text2);text-align:right}
+.parent-actions{display:flex;gap:4px;flex-wrap:wrap}
+.trip-card.sc-card{cursor:pointer;margin-bottom:6px}
+.trip-card.sc-card.dragging{opacity:.4}
+.trip-card.sc-card.drag-over{border-color:var(--accent);box-shadow:0 0 0 3px rgba(37,99,235,.12);margin-bottom:12px}
 .segment-item{display:flex;gap:8px;align-items:flex-start;position:relative}
 .segment-item:not(:last-child)::before{content:'';position:absolute;left:17px;top:32px;bottom:-8px;width:2px;background:var(--border);z-index:1}
 .si-order{width:36px;height:36px;border-radius:50%;background:var(--surface2);border:2px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;color:var(--text2);flex-shrink:0;position:relative;z-index:2}
@@ -127,6 +140,14 @@ textarea{resize:vertical;min-height:56px}
 .inline-title{font-size:15px;font-weight:600;letter-spacing:-.01em;flex:1}
 .stay-section{margin-top:4px}
 .stay-section .section-title{margin-top:8px}
+.btn-login{display:inline-flex;align-items:center;gap:8px;padding:8px 18px;border-radius:20px;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;cursor:pointer;border:1px solid #dadce0;background:#fff;color:#3c4043;transition:all .2s;white-space:nowrap;box-shadow:0 1px 2px rgba(0,0,0,.06)}
+.btn-login:hover{background:#f8f9fa;border-color:#c6c9cc;box-shadow:0 1px 4px rgba(0,0,0,.1)}
+.btn-login:active{background:#f1f3f4;box-shadow:0 1px 2px rgba(0,0,0,.06)}
+.btn-login .g-icon{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;background:#fff;border-radius:50%;font-size:14px;font-weight:700;color:#4285f4}
+.btn-login .g-icon span{background:linear-gradient(135deg,#4285f4 25%,#ea4335 25%,#ea4335 50%,#fbbc05 50%,#fbbc05 75%,#34a853 75%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;font-size:15px;font-weight:700}
+.lang-picker{font-family:'DM Sans',sans-serif;font-size:12px;padding:5px 8px;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:var(--text);cursor:pointer;outline:none;transition:border-color .15s}
+.lang-picker:hover{border-color:var(--border2)}
+.lang-picker:focus{border-color:var(--accent)}
 </style>
 </head>
 <body>
@@ -144,7 +165,8 @@ textarea{resize:vertical;min-height:56px}
 <span id="userName" style="font-size:12px;color:var(--text2)"></span>
 <button class="btn btn-sm btn-ghost" onclick="logout()" style="font-size:11px" id="logoutBtn">Çıkış</button>
 </div>
-<button class="btn btn-sm" id="loginBtn" onclick="login()">🚪 <span id="loginBtnLabel">Giriş</span></button>
+<button class="btn-login" id="loginBtn" onclick="login()"><span class="g-icon"><span>G</span></span> <span id="loginBtnLabel">Giriş</span></button>
+<select class="lang-picker" id="headerLangSelect" onchange="headerChangeLang(this.value)"><option value="tr">🇹🇷 TR</option><option value="en">🇬🇧 EN</option><option value="de">🇩🇪 DE</option></select>
 <button class="btn btn-sm" id="exportBtn" onclick="exportData()">⬇ <span id="exportBtnLabel">Dışa Aktar</span></button>
 <button class="btn btn-sm" id="importBtn" onclick="document.getElementById('importFile').click()">⬆ <span id="importBtnLabel">İçe Aktar</span></button>
 <input type="file" id="importFile" accept=".json" style="display:none" onchange="importData(event)">
@@ -253,18 +275,50 @@ textarea{resize:vertical;min-height:56px}
 <button class="btn" onclick="cm('deleteModal')"><span id="deleteCancel">İptal</span></button>
 <button class="btn btn-danger" id="deleteConfirmBtn"><span id="deleteConfirmLabel">Sil</span></button>
 </div>
+  </div>
 </div>
+<div class="modal-backdrop" id="shareModal">
+  <div class="modal" style="max-width:380px">
+    <div class="modal-header"><div class="modal-title"><span id="shareModalTitle">Senaryoyu Paylaş</span></div><button class="modal-close" onclick="cm('shareModal')">✕</button></div>
+    <div class="form-group" style="padding:0 0 16px">
+      <label class="form-label" id="shareEmailLabel">Kişinin E-posta Adresi</label>
+      <input type="email" id="shareEmailInput" placeholder="ornek@gmail.com" onkeydown="if(event.key==='Enter')confirmShare()">
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="cm('shareModal')"><span id="shareCancel">İptal</span></button>
+      <button class="btn btn-primary" onclick="confirmShare()"><span id="shareConfirm">Paylaş</span></button>
+    </div>
+  </div>
+</div>
+<div class="modal-backdrop" id="membersModal">
+  <div class="modal" style="max-width:380px">
+    <div class="modal-header"><div class="modal-title"><span id="membersModalTitle">Üyeleri Yönet</span></div><button class="modal-close" onclick="cm('membersModal')">✕</button></div>
+    <div id="membersList" style="margin-bottom:16px"></div>
+    <div class="form-group" style="padding:12px 0;border-top:1px solid var(--border)">
+      <label class="form-label" id="membersAddLabel"></label>
+      <div style="display:flex;gap:6px">
+        <input type="email" id="memberEmailInput" placeholder="ornek@gmail.com" onkeydown="if(event.key==='Enter')confirmAddMember()">
+        <button class="btn btn-primary" onclick="confirmAddMember()">+</button>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="cm('membersModal')"><span id="membersCancel"></span></button>
+    </div>
+  </div>
 </div>
 <div id="toast"></div>
 <script>
 // ─── STATE ───────────────────────────────────────────────────────────────────
-let trips = [];let clipboard = null;let dragIdx = null;let labelMode = 'hover';
+let trips = [];let clipboard = null;let dragIdx = null;let dragScIdx = null;let dragParentIdx = null;let labelMode = 'hover';
 let settings = { defaultCurrency: '€', mapStyle: 'light', lang: 'tr' };
 let activeTripId = null;
+let expandedTripId = null;
 let editingTripId = null;
 let editingSegKey = null;
 let firebaseUser = null;
 let firestoreDB = null;
+let recentlySaved = new Set();
+let tripsUnsub = null;
 let editingStayId = null;
 let editingAttrId = null;
 let addSegTransport = null;
@@ -295,7 +349,8 @@ const A = {
 const LANG = {
   tr: {
     appTitle:'RouteLog',appSubtitle:'Seyahat Rota Planlayıcı',newTrip:'Yeni Seyahat',myTrips:'Seyahatlerim',
-    settings:'Ayarlar',login:'🚪 Giriş',logout:'Çıkış',exportBtn:'Dışa Aktar',importBtn:'İçe Aktar',deleteAll:'Tümünü Sil',
+    settings:'Ayarlar',login:'Giriş',logout:'Çıkış',exportBtn:'Dışa Aktar',importBtn:'İçe Aktar',deleteAll:'Tümünü Sil',
+    scenario:'Senaryo',defaultScenario:'Varsayılan Senaryo',newScenario:'Yeni Senaryo',scenarioAdded:'Senaryo eklendi ✓',scenarioDeleted:'Senaryo silindi ✓',deleteScenarioConfirm:'Senaryoyu Sil',deleteScenarioMsg:'"{t}" senaryosu silinecek. Devam?',editScenarioName:'Senaryo Adını Düzenle',scenarioCopied:'Senaryo kopyalandı ✓',scenarioPasted:'Senaryo yapıştırıldı ✓',noCopiedScenario:'Kopyalanmış senaryo yok',
     totalLabel:'Toplam',totalAllTrips:'Tüm Seyahatler Toplamı',totalVisible:'Görünür Seyahatler Toplamı',
     tripTitle:'Seyahat Adı',create:'Oluştur',cancel:'İptal',save:'Kaydet',delete:'Sil',
     editTripName:'Adı Düzenle',duplicate:'Kopyala',
@@ -342,6 +397,13 @@ const LANG = {
     migrated:'Eski rotalar içe aktarıldı ✓',error:'Hata: ',coordsUpdating:'Koordinatlar güncelleniyor...',
     tripDuplicated:'Seyahat kopyalandı ✓',tripOpen:'Seyahat',importSegs:'{n} segment içe aktarıldı ✓',
     loginToast:'Giriş yapıldı ✓',logoutToast:'Çıkış yapıldı',
+    shareModalTitle:'Senaryoyu Paylaş',shareTripModalTitle:'Seyahati Paylaş',shareEmailLabel:"Kişinin E-posta Adresi",shareAccessLabel:'Erişim Seviyesi',
+    shareAccessRead:'Sadece Oku',shareAccessWrite:'Oku ve Yaz',shareConfirm:'Paylaş',
+    myCollaborations:'Ortak Çalışma Yaptıklarım',shareDeleted:'Paylaşım kaldırıldı',memberAdded:'Üye eklendi ✓',memberRemoved:'Üye çıkarıldı ✓',manageMembers:'Üyeleri Yönet',memberEmail:'E-posta Adresi',membersAddLabel:'E-posta ile üye ekle',membersCancel:'Kapat',leaveCollab:'Ayrıl',collabLeft:'Çalışmadan ayrıldın ✓',
+    sharedDone:'Paylaşıldı ✓',loginRequired:'Önce giriş yapın',validEmail:'Geçerli bir e-posta girin',
+    imported:'içe aktarıldı',importedDone:'Seyahate eklendi ✓',sharedTrip:'Paylaşılan Seyahat',
+    access:'Erişim',shareCancel:'İptal',
+    emailTrip:'seyahat',emailScenario:'senaryo',emailSubject:'{sender} seninle bir {type} paylaştı — RouteLog',emailBody:'{sender} seninle "{item}" isimli {type} paylaştı.',emailBtn:'📥 RouteLog\'da Aç',emailFooter:'RouteLog · Seyahat Planlayıcı',emailAccessRead:'Sadece Oku',emailAccessWrite:'Oku ve Yaz',
     tp_ucak:'Uçuş',tp_tren:'Tren',tp_otobus:'Otobüs',tp_araba:'Araba',tp_taksi:'Taksi',
     tp_feribot:'Feribot',tp_metro:'Metro',tp_tramvay:'Tramvay',tp_yaya:'Yaya',tp_bisiklet:'Bisiklet',
     tp_scooter:'Scooter',tp_diger:'Diğer',
@@ -349,7 +411,8 @@ const LANG = {
   },
   en: {
     appTitle:'RouteLog',appSubtitle:'Trip Planner',newTrip:'New Trip',myTrips:'My Trips',
-    settings:'Settings',login:'🚪 Login',logout:'Logout',exportBtn:'Export',importBtn:'Import',deleteAll:'Delete All',
+    settings:'Settings',login:'Login',logout:'Logout',exportBtn:'Export',importBtn:'Import',deleteAll:'Delete All',
+    scenario:'Scenario',defaultScenario:'Default Scenario',newScenario:'New Scenario',scenarioAdded:'Scenario added ✓',scenarioDeleted:'Scenario deleted ✓',deleteScenarioConfirm:'Delete Scenario',deleteScenarioMsg:'Scenario "{t}" will be deleted. Continue?',editScenarioName:'Edit Scenario Name',scenarioCopied:'Scenario copied ✓',scenarioPasted:'Scenario pasted ✓',noCopiedScenario:'No copied scenario',
     totalLabel:'Total',totalAllTrips:'All Trips Total',totalVisible:'Visible Trips Total',
     tripTitle:'Trip Name',create:'Create',cancel:'Cancel',save:'Save',delete:'Delete',
     editTripName:'Edit Name',duplicate:'Duplicate',
@@ -397,6 +460,13 @@ const LANG = {
     migrated:'Old routes imported ✓',error:'Error: ',coordsUpdating:'Updating coords...',
     tripDuplicated:'Trip copied ✓',tripOpen:'Trip',importSegs:'{n} seg(s) imported ✓',
     loginToast:'Logged in ✓',logoutToast:'Logged out',
+    shareModalTitle:'Share Scenario',shareTripModalTitle:'Share Trip',shareEmailLabel:"Recipient's Email",shareAccessLabel:'Access Level',
+    shareAccessRead:'Read Only',shareAccessWrite:'Read & Write',shareConfirm:'Share',
+    myCollaborations:'My Collaborations',shareDeleted:'Share removed',memberAdded:'Member added ✓',memberRemoved:'Member removed ✓',manageMembers:'Manage Members',memberEmail:'Email Address',membersAddLabel:'Add member by email',membersCancel:'Close',leaveCollab:'Leave',collabLeft:'Left collaboration ✓',
+    sharedDone:'Shared ✓',loginRequired:'Login first',validEmail:'Enter a valid email',
+    imported:'imported',importedDone:'Added to trips ✓',sharedTrip:'Shared Trip',
+    access:'Access',shareCancel:'Cancel',
+    emailTrip:'trip',emailScenario:'scenario',emailSubject:'{sender} shared a {type} with you — RouteLog',emailBody:'{sender} shared the {type} "{item}" with you.',emailBtn:'📥 Open in RouteLog',emailFooter:'RouteLog · Trip Planner',emailAccessRead:'Read Only',emailAccessWrite:'Read & Write',
     tp_ucak:'Flight',tp_tren:'Train',tp_otobus:'Bus',tp_araba:'Car',tp_taksi:'Taxi',
     tp_feribot:'Ferry',tp_metro:'Metro',tp_tramvay:'Tram',tp_yaya:'Walk',tp_bisiklet:'Bike',
     tp_scooter:'Scooter',tp_diger:'Other',
@@ -404,7 +474,8 @@ const LANG = {
   },
   de: {
     appTitle:'RouteLog',appSubtitle:'Reiseplaner',newTrip:'Neue Reise',myTrips:'Meine Reisen',
-    settings:'Einstellungen',login:'🚪 Login',logout:'Logout',exportBtn:'Exportieren',importBtn:'Importieren',deleteAll:'Alle löschen',
+    settings:'Einstellungen',login:'Anmelden',logout:'Logout',exportBtn:'Exportieren',importBtn:'Importieren',deleteAll:'Alle löschen',
+    scenario:'Szenario',defaultScenario:'Standard Szenario',newScenario:'Neues Szenario',scenarioAdded:'Szenario hinzugefügt ✓',scenarioDeleted:'Szenario gelöscht ✓',deleteScenarioConfirm:'Szenario löschen',deleteScenarioMsg:'Szenario "{t}" wird gelöscht. Fortfahren?',editScenarioName:'Szenarionamen bearbeiten',scenarioCopied:'Szenario kopiert ✓',scenarioPasted:'Szenario eingefügt ✓',noCopiedScenario:'Kein kopiertes Szenario',
     totalLabel:'Gesamt',totalAllTrips:'Alle Reisen Gesamt',totalVisible:'Sichtbare Reisen Gesamt',
     tripTitle:'Reisename',create:'Erstellen',cancel:'Abbrechen',save:'Speichern',delete:'Löschen',
     editTripName:'Name bearbeiten',duplicate:'Duplizieren',
@@ -451,6 +522,13 @@ const LANG = {
     migrated:'Alte Routen importiert ✓',error:'Fehler: ',coordsUpdating:'Aktualisiere Koordinaten...',
     tripDuplicated:'Reise kopiert ✓',tripOpen:'Reise',importSegs:'{n} Segment(e) importiert ✓',
     loginToast:'Angemeldet ✓',logoutToast:'Abgemeldet',
+    shareModalTitle:'Szenario teilen',shareTripModalTitle:'Reise teilen',shareEmailLabel:"E-Mail des Empfängers",shareAccessLabel:'Zugriffsstufe',
+    shareAccessRead:'Nur Lesen',shareAccessWrite:'Lesen und Schreiben',shareConfirm:'Teilen',
+    myCollaborations:'Meine Mitarbeiten',shareDeleted:'Freigabe entfernt',memberAdded:'Mitglied hinzugefügt ✓',memberRemoved:'Mitglied entfernt ✓',manageMembers:'Mitglieder verwalten',memberEmail:'E-Mail-Adresse',membersAddLabel:'Mitglied per E-Mail hinzufügen',membersCancel:'Schließen',leaveCollab:'Verlassen',collabLeft:'Mitarbeit verlassen ✓',
+    sharedDone:'Geteilt ✓',loginRequired:'Zuerst anmelden',validEmail:'Gültige E-Mail eingeben',
+    imported:'importiert',importedDone:'Zu Reisen hinzugefügt ✓',sharedTrip:'Geteilte Reise',
+    access:'Zugriff',shareCancel:'Abbrechen',
+    emailTrip:'Reise',emailScenario:'Szenario',emailSubject:'{sender} hat ein {type} mit dir geteilt — RouteLog',emailBody:'{sender} hat das {type} "{item}" mit dir geteilt.',emailBtn:'📥 In RouteLog öffnen',emailFooter:'RouteLog · Reiseplaner',emailAccessRead:'Nur Lesen',emailAccessWrite:'Lesen und Schreiben',
     tp_ucak:'Flug',tp_tren:'Zug',tp_otobus:'Bus',tp_araba:'Auto',tp_taksi:'Taxi',
     tp_feribot:'Fähre',tp_metro:'U-Bahn',tp_tramvay:'Straßenbahn',tp_yaya:'Zu Fuß',tp_bisiklet:'Fahrrad',
     tp_scooter:'Roller',tp_diger:'Andere',
@@ -481,29 +559,50 @@ function segCost(s){return p(s.price)*(s.passengers||1)}
 function stayCost(s){return p(s.price)}
 function allSegs(t){const r=[];(t.segments||[]).forEach(s=>r.push(s));(t.stays||[]).forEach(s=>r.push({...s,type:'stay'}));return r}
 
+// Scenario helpers
+function findScenario(id){
+  for(const p of trips)for(const s of(p.scenarios||[]))if(s.id===id)return s;
+  return null;
+}
+function findParentOfScenario(id){
+  return trips.find(p=>(p.scenarios||[]).some(s=>s.id===id));
+}
+function getActiveScenario(){return activeTripId?findScenario(activeTripId):null}
+function allScenarios(){
+  const r=[];
+  for(const p of trips)for(const s of(p.scenarios||[]))r.push(s);
+  return r;
+}
+
 // ─── FIREBASE ────────────────────────────────────────────────────────────────
 firebase.initializeApp(FIREBASE_CONFIG);
 const fireAuth = firebase.auth();
 firestoreDB = firebase.firestore();
 
 function login(){
-  fireAuth.signInWithPopup(new firebase.auth.GoogleAuthProvider()).then(()=>toast(_t('loginToast'))).catch(e=>console.error(e));
+  const provider = new firebase.auth.GoogleAuthProvider();
+  provider.setCustomParameters({ prompt: 'select_account' });
+  fireAuth.signInWithPopup(provider).then(()=>toast(_t('loginToast'))).catch(e=>console.error(e));
 }
 function logout(){
-  document.getElementById('loginBtn').style.display='none';
-  syncToFirestore().then(()=>fireAuth.signOut()).then(()=>toast(_t('logoutToast')));
+  if(tripsUnsub){tripsUnsub();tripsUnsub=null}
+  recentlySaved.clear();
+  fireAuth.signOut().then(()=>{trips=[];activeTripId=null;expandedTripId=null;localStorage.removeItem('routelog_trips');localStorage.removeItem('routelog_settings');dbDel('trips');dbDel('settings');renderTrips();drawMap();toast(_t('logoutToast'))});
 }
 function onFirebaseAuth(user){
   firebaseUser=user;
   const loginBtn=document.getElementById('loginBtn');
   const userArea=document.getElementById('userArea');
   if(user){
+    firestoreDB.collection('userEmails').doc(user.email).set({uid:user.uid,displayName:user.displayName||user.email}).catch(()=>{});
     loginBtn.style.display='none';
     userArea.style.display='flex';
     document.getElementById('userAvatar').src=user.photoURL||'';
     document.getElementById('userName').textContent=user.displayName||user.email;
     loadFromFirestore();
   }else{
+    if(tripsUnsub){tripsUnsub();tripsUnsub=null}
+    recentlySaved.clear();
     loginBtn.style.display='';
     userArea.style.display='none';
   }
@@ -511,23 +610,108 @@ function onFirebaseAuth(user){
 async function loadFromFirestore(){
   if(!firebaseUser)return;
   try{
+    // Migration: check and migrate old-format data
+    await migrateIfNeeded();
+
+    // Set up real-time trip listeners (replaces loadSharedScenarios)
+    setupTripsListener();
+
+    // Load settings
     const d=await firestoreDB.collection('users').doc(firebaseUser.uid).get();
-    if(d.exists){
-      const data=d.data();
-      if(data.trips&&data.trips.length){
-        trips=data.trips;
-        trips.forEach(t=>{if(!t.stays)t.stays=[];if(!t.segments)t.segments=[];if(!t.attractions)t.attractions=[];if(t.visible===undefined)t.visible=true});
-        saveTrips();renderTrips();if(activeTripId)renderTripDetail();drawMap();
-      }
-    }else if(trips.length){
-      syncToFirestore();
-    }
+    if(d.exists){const data=d.data();if(data.settings)settings={...settings,...data.settings}}
+    renderSettings();
   }catch(e){console.error('Firestore load error',e)}
+}
+async function migrateIfNeeded(){
+  try{
+    const d=await firestoreDB.collection('users').doc(firebaseUser.uid).get();
+    if(!d.exists)return;
+    const data=d.data();
+    if(!data.trips||!data.trips.length)return;
+
+    // Migrate old format (direct segments → scenarios)
+    let oldTrips=data.trips;
+    if(oldTrips[0].segments!==undefined){
+      oldTrips=[{id:'parent_'+Date.now(),title:'Londra Seyahatim',createdAt:new Date().toISOString(),visible:true,scenarios:oldTrips.map(t=>({id:t.id,title:t.title,createdAt:t.createdAt,visible:t.visible!==false,segments:t.segments||[],stays:t.stays||[],attractions:t.attractions||[]}))}];
+    }
+
+    const now=new Date().toISOString();
+    for(const trip of oldTrips){
+      const ref=firestoreDB.collection('trips').doc(trip.id);
+      await ref.set({...trip,ownerId:firebaseUser.uid,ownerEmail:firebaseUser.email,ownerDisplayName:firebaseUser.displayName||firebaseUser.email,memberIds:[],updatedAt:now});
+    }
+
+    // Migrate old shares → members
+    try{
+      const snap=await firestoreDB.collection('shares').where('ownerId','==',firebaseUser.uid).get();
+      for(const doc of snap.docs){
+        const share=doc.data();
+        if(share.recipientEmail){
+          const ue=await firestoreDB.collection('userEmails').doc(share.recipientEmail).get();
+          if(ue.exists){
+            const tripRef=firestoreDB.collection('trips').doc(share.targetId);
+            await tripRef.update({memberIds:firebase.firestore.FieldValue.arrayUnion(ue.data().uid)}).catch(()=>{});
+          }
+        }
+      }
+      const snap2=await firestoreDB.collection('shares').where('recipientEmail','==',firebaseUser.email).get();
+      for(const doc of snap2.docs){
+        const share=doc.data();
+        if(share.type==='trip'&&share.trip){
+          const tripRef=firestoreDB.collection('trips').doc(share.targetId);
+          const ts=await tripRef.get();
+          if(ts.exists){
+            await tripRef.update({memberIds:firebase.firestore.FieldValue.arrayUnion(firebaseUser.uid)}).catch(()=>{});
+          }else{
+            await tripRef.set({...share.trip,ownerId:share.ownerId,ownerEmail:share.ownerEmail,ownerDisplayName:share.ownerDisplayName||share.ownerEmail,memberIds:[firebaseUser.uid],updatedAt:now});
+          }
+        }
+      }
+    }catch(e){console.error('share migration error',e)}
+
+    // Clear old data
+    await firestoreDB.collection('users').doc(firebaseUser.uid).update({trips:firebase.firestore.FieldValue.delete()}).catch(()=>{});
+
+    // Load migrated trips into local state
+    const qSnap=await firestoreDB.collection('trips').where('ownerId','==',firebaseUser.uid).get();
+    trips=[];qSnap.forEach(doc=>{const t=doc.data();t.id=doc.id;trips.push(t)});
+    saveTrips();
+  }catch(e){console.error('migration error',e)}
+}
+function setupTripsListener(){
+  if(tripsUnsub){tripsUnsub();tripsUnsub=null}
+  if(!firebaseUser)return;
+
+  let _ownedTripCache=[];let _collabTripCache=[];
+
+  const mergeTrips=()=>{
+    const map=new Map();trips.forEach(t=>map.set(t.id,t));
+    (_ownedTripCache||[]).forEach(t=>{if(!recentlySaved.has(t.id))map.set(t.id,t)});
+    (_collabTripCache||[]).forEach(t=>{if(!recentlySaved.has(t.id))map.set(t.id,t)});
+    trips=Array.from(map.values());
+    trips.forEach(p=>{if(!p.scenarios)p.scenarios=[];(p.scenarios||[]).forEach(s=>{if(!s.stays)s.stays=[];if(!s.segments)s.segments=[];if(!s.attractions)s.attractions=[];if(s.visible===undefined)s.visible=true})});
+    trips.sort((a,b)=>(a.createdAt||'').localeCompare(b.createdAt||''));
+    saveTrips();renderTrips();if(activeTripId)renderTripDetail();drawMap();
+  };
+
+  const unsub1=firestoreDB.collection('trips').where('ownerId','==',firebaseUser.uid).onSnapshot(snap=>{_ownedTripCache=[];snap.forEach(d=>{const t=d.data();t.id=d.id;_ownedTripCache.push(t)});mergeTrips()},e=>console.error('owned snap err',e));
+  const unsub2=firestoreDB.collection('trips').where('memberIds','array-contains',firebaseUser.uid).onSnapshot(snap=>{_collabTripCache=[];snap.forEach(d=>{const t=d.data();t.id=d.id;_collabTripCache.push(t)});mergeTrips()},e=>console.error('collab snap err',e));
+
+  tripsUnsub=()=>{unsub1();unsub2();_ownedTripCache=[];_collabTripCache=[]};
 }
 async function syncToFirestore(){
   if(!firebaseUser)return;
   try{
-    await firestoreDB.collection('users').doc(firebaseUser.uid).set({trips,settings});
+    await firestoreDB.collection('users').doc(firebaseUser.uid).set({settings},{merge:true});
+    const now=new Date().toISOString();recentlySaved.clear();
+    const promises=trips.map(t=>{
+      const doc={...t,updatedAt:now};if(!doc.ownerId){doc.ownerId=firebaseUser.uid;doc.ownerEmail=firebaseUser.email;doc.ownerDisplayName=firebaseUser.displayName||firebaseUser.email}
+      if(!doc.memberIds)doc.memberIds=[];
+      recentlySaved.add(t.id);
+      return firestoreDB.collection('trips').doc(t.id).set(doc);
+    });
+    await Promise.all(promises);
+    setTimeout(()=>recentlySaved.clear(),3000);
   }catch(e){console.error('Firestore sync error',e)}
 }
 
@@ -549,22 +733,32 @@ function dbDel(k){return new Promise((res,rej)=>{const t=db.transaction('kv','re
 
 async function loadData(){
   const t=await dbGet('trips');const s=await dbGet('settings');
-  if(t&&t.length){trips=t;trips.forEach(t=>{if(!t.stays)t.stays=[];if(!t.segments)t.segments=[];if(!t.attractions)t.attractions=[];if(t.visible===undefined)t.visible=true})}
-  else{const lt=localStorage.getItem('routelog_trips');if(lt){trips=JSON.parse(lt);trips.forEach(t=>{if(!t.stays)t.stays=[];if(!t.segments)t.segments=[];if(!t.attractions)t.attractions=[];if(t.visible===undefined)t.visible=true});dbPut('trips',trips)}}
+  if(t&&t.length){
+    trips=t;
+    // Auto-migrate old format (direct segments) to new (scenarios under parent)
+    if(trips[0].segments!==undefined){
+      const old=trips;
+      trips=[{id:'parent_'+Date.now(),title:'Londra Seyahatim',createdAt:new Date().toISOString(),visible:true,scenarios:old.map(t=>({id:t.id,title:t.title,createdAt:t.createdAt,visible:t.visible!==false,segments:t.segments||[],stays:t.stays||[],attractions:t.attractions||[]}))}];
+      dbPut('trips',trips);localStorage.setItem('routelog_trips',JSON.stringify(trips));
+    }
+    // Ensure scenarios field exists on parent trips
+    trips.forEach(p=>{if(!p.scenarios)p.scenarios=[];(p.scenarios||[]).forEach(s=>{if(!s.stays)s.stays=[];if(!s.segments)s.segments=[];if(!s.attractions)s.attractions=[];if(s.visible===undefined)s.visible=true})});
+  }
+  else{const lt=localStorage.getItem('routelog_trips');if(lt){trips=JSON.parse(lt);dbPut('trips',trips)}}
   if(s)settings={...settings,...s}
   else{const ls=localStorage.getItem('routelog_settings');if(ls){settings={...settings,...JSON.parse(ls)};dbPut('settings',settings)}}
 }
 function saveTrips(){localStorage.setItem('routelog_trips',JSON.stringify(trips));dbPut('trips',trips);if(firebaseUser)syncToFirestore()}
 function saveSettings(){settings.defaultCurrency=document.getElementById('defaultCurrency').value;settings.lang=document.getElementById('langSelect').value;localStorage.setItem('routelog_settings',JSON.stringify(settings));dbPut('settings',settings);if(firebaseUser)syncToFirestore();toast(_t('settingsSaved'))}
-function migrateLegacyData(){const r=localStorage.getItem('routelog_routes');if(!r)return false;try{const routes=JSON.parse(r);if(!routes||!routes.length)return false;trips.push({id:'trip_'+Date.now(),title:'Seyahat #1',createdAt:new Date().toISOString(),visible:true,segments:routes.map((x,i)=>({...x,order:i,id:x.id||'seg_'+Date.now()+'_'+i,passengers:x.passengers||1})),stays:[],attractions:[]});saveTrips();localStorage.removeItem('routelog_routes');return true}catch{return false}}
+function migrateLegacyData(){const r=localStorage.getItem('routelog_routes');if(!r)return false;try{const routes=JSON.parse(r);if(!routes||!routes.length)return false;trips.push({id:'trip_'+Date.now(),title:'Seyahat #1',createdAt:new Date().toISOString(),visible:true,scenarios:[{id:'sc_'+Date.now(),title:_t('defaultScenario'),createdAt:new Date().toISOString(),visible:true,segments:routes.map((x,i)=>({...x,order:i,id:x.id||'seg_'+Date.now()+'_'+i,passengers:x.passengers||1})),stays:[],attractions:[]}]});saveTrips();localStorage.removeItem('routelog_routes');return true}catch{return false}}
 
 async function retrySegGeocode(tripId,segId){
-  const trip=trips.find(t=>t.id===tripId);if(!trip)return;const seg=(trip.segments||[]).find(s=>s.id===segId);if(!seg)return;
+  const trip=findScenario(tripId);if(!trip)return;const seg=(trip.segments||[]).find(s=>s.id===segId);if(!seg)return;
   toast(_t('searchingCoords'));const[f,t]=await Promise.all([geocode(seg.from),geocode(seg.to)]);
   if(f&&t){seg.fromLL=f;seg.toLL=t;saveTrips();renderTripDetail();drawMap();toast(_t('coordsUpdated'))}else{toast(_t('coordsNotFound'))}
 }
 async function retryStayGeocode(tripId,stayId){
-  const trip=trips.find(t=>t.id===tripId);if(!trip)return;const stay=(trip.stays||[]).find(s=>s.id===stayId);if(!stay)return;
+  const trip=findScenario(tripId);if(!trip)return;const stay=(trip.stays||[]).find(s=>s.id===stayId);if(!stay)return;
   toast(_t('searchingCoords'));const ll=await geocode(stay.city);
   if(ll){stay.cityLat=ll;saveTrips();renderTripDetail();drawMap();toast(_t('coordsUpdated'))}else{toast(_t('coordsNotFound'))}
 }
@@ -587,11 +781,11 @@ function drawMap(){
   try{map.invalidateSize()}catch{}
   Object.values(mapLayers).forEach(l=>{try{map.removeLayer(l)}catch{}});mapLayers={};const cm={};
   const all=[];
-  trips.filter(t=>t.visible!==false).forEach(t=>{
-    (t.segments||[]).forEach(s=>all.push({...s,tripId:t.id}));
-    (t.stays||[]).forEach(s=>{if(s.city&&s.cityLat)all.push({from:s.city,to:s.city,fromLL:s.cityLat,toLL:s.cityLat,tripId:t.id,id:s.id,type:'stay',icon:'🏨'})});
-    (t.attractions||[]).forEach(a=>{if(a.city&&a.lat)all.push({from:a.city,to:a.city,fromLL:a.lat,toLL:a.lat,tripId:t.id,id:a.id,type:'attr',icon:(A[a.category]||{}).icon||'📍',color:(A[a.category]||{}).color||'#6b7280',name:a.name})});
-  });
+  trips.filter(t=>t.visible!==false).forEach(t=>(t.scenarios||[]).filter(s=>s.visible!==false).forEach(s=>{
+    (s.segments||[]).forEach(seg=>all.push({...seg,tripId:s.id}));
+    (s.stays||[]).forEach(st=>{if(st.city&&st.cityLat)all.push({from:st.city,to:st.city,fromLL:st.cityLat,toLL:st.cityLat,tripId:s.id,id:st.id,type:'stay',icon:'🏨'})});
+    (s.attractions||[]).forEach(a=>{if(a.city&&a.lat)all.push({from:a.city,to:a.city,fromLL:a.lat,toLL:a.lat,tripId:s.id,id:a.id,type:'attr',icon:(A[a.category]||{}).icon||'📍',color:(A[a.category]||{}).color||'#6b7280',name:a.name})});
+  }));
   all.forEach(s=>{
     if(!s.fromLL||!s.toLL)return;
     const meta=T[s.type]||{icon:s.icon||'🏨',color:'#7c3aed',bg:'#f5f3ff'};
@@ -615,13 +809,13 @@ function drawMap(){
       if(!cm[city]){const m=L.circleMarker(ll,{radius:7,fillColor:meta.color,color:'white',weight:2,fillOpacity:.9}).addTo(map);m.bindTooltip('<b style="font-family:\'DM Sans\',sans-serif;font-size:12px;">'+esc(city)+'</b>',{permanent:labelMode!=='hover',direction:'top',offset:[0,-8],className:'city-tooltip'});cm[city]=m;mapLayers['city_'+city]=m}
     });
   });
-  trips.filter(t=>t.visible!==false).forEach(t=>{
-    const route=(t.attractions||[]).filter(a=>cm[a.city]).sort((a,b)=>((a.time||'99:99').localeCompare(b.time||'99:99')));
+  trips.filter(t=>t.visible!==false).forEach(t=>(t.scenarios||[]).filter(s=>s.visible!==false).forEach(s=>{
+    const route=(s.attractions||[]).filter(a=>cm[a.city]).sort((a,b)=>((a.time||'99:99').localeCompare(b.time||'99:99')));
     if(route.length<2)return;
     const points=route.map(a=>cm[a.city].getLatLng());
     const line=L.polyline(points,{color:'#7c3aed',weight:2,opacity:.5,dashArray:'5 8'}).addTo(map);
-    mapLayers['attr_route_'+t.id]=line;
-  });
+    mapLayers['attr_route_'+s.id]=line;
+  }));
   if(labelMode==='zoom')updateLabelVisibility();
 }
 
@@ -635,7 +829,7 @@ function switchTab(t){
   document.querySelectorAll('.stab').forEach((e,i)=>e.classList.toggle('active',['trips','settings'][i]===t));
   document.querySelectorAll('.sidebar-section').forEach(e=>e.classList.remove('active'));
   document.getElementById('sec-'+t).classList.add('active');
-  if(t==='trips'){activeTripId=null;renderTrips()}
+  if(t==='trips'){activeTripId=null;expandedTripId=null;renderTrips()}
 }
 function openTripDetail(id){
   activeTripId=id;attrCategory=null;
@@ -655,32 +849,59 @@ function goToTrips(){
 // ─── RENDER TRIPS ────────────────────────────────────────────────────────────
 function renderTrips(){
   const el=document.getElementById('tripsList');
-  if(!trips.length){el.innerHTML='<div class="empty-state"><span>🗺️</span><p>'+_t('noTrips').replace('\\n','<br>')+'</p></div>';document.getElementById('totalAmount').textContent='—';document.getElementById('totalCount').textContent='0';document.getElementById('totalBreakdown').textContent='';document.getElementById('totalLabel').textContent=_t('totalLabel');return}
-  el.innerHTML=trips.map((t,i)=>{
-    const segs=t.segments||[];const stays=t.stays||[];
+  const ownedTrips=firebaseUser?trips.filter(t=>!t.ownerId||t.ownerId===firebaseUser.uid):trips;
+  const collabTrips=firebaseUser?trips.filter(t=>t.ownerId&&t.ownerId!==firebaseUser.uid):[];
+  const hasOwn=!!ownedTrips.length;const hasCollab=!!collabTrips.length;
+  if(!hasOwn&&!hasCollab){el.innerHTML='<div class="empty-state"><span>🗺️</span><p>'+_t('noTrips').replace('\\n','<br>')+'</p></div>';document.getElementById('totalAmount').textContent='—';document.getElementById('totalCount').textContent='0';document.getElementById('totalBreakdown').textContent='';document.getElementById('totalLabel').textContent=_t('totalLabel');return}
+  let html='';
+
+  // Shared helper for scenario card HTML
+  const scCard=(s,j,i)=>{
+    const segs=s.segments||[];const stays=s.stays||[];const attrs=s.attractions||[];
     const currs=[...new Set([...segs,...stays].filter(x=>x.price).map(x=>x.currency||'€'))];
-    const totalStr=currs.map(c=>{const segV=segs.filter(x=>x.price&&(x.currency||'€')===c).reduce((s,x)=>s+p(x.price)*(x.passengers||1),0);const stayV=stays.filter(x=>x.price&&(x.currency||'€')===c).reduce((s,x)=>s+p(x.price),0);return c+(segV+stayV).toLocaleString(_l(),{minimumFractionDigits:0,maximumFractionDigits:2})}).join(' + ');
-    const segIcons=[...new Set(segs.map(x=>x.type))].map(tp=>(T[tp]||{}).icon||'🚀');
-    const attrIcons=[...new Set((t.attractions||[]).map(x=>x.category))].map(c=>(A[c]||{}).icon||'📍');
-    const icons=[...segIcons,...attrIcons].join(' ');
-    const pax=[...new Set(segs.map(s=>s.passengers||1))];const paxS=[...new Set(stays.map(s=>s.passengers||1))];
-    const paxAll=[...new Set([...segs,...stays].map(s=>s.passengers||1))];
-    const paxLabel=!segs.length&&!stays.length?'':'👥 '+_t('person',{n:paxAll[0]})+(paxAll.length>1?' · '+_t('mixed'):'');
-    const attrCount=(t.attractions||[]).length;
-    const metaParts=[_t('segmentCount',{n:segs.length}),stays.length?_t('stayCount',{n:stays.length}):'',attrCount?_t('attrCount',{n:attrCount}):'',paxLabel,t.createdAt?fd(t.createdAt):''].filter(Boolean);
-    return '<div class="trip-card" draggable="true" ondragstart="event.stopPropagation();dragIdx='+i+';this.classList.add(\'dragging\')" ondragover="event.preventDefault();this.classList.add(\'drag-over\')" ondragleave="this.classList.remove(\'drag-over\')" ondrop="event.preventDefault();event.stopPropagation();if(dragIdx!==null&&dragIdx!=='+i+'){const t=trips.splice(dragIdx,1)[0];trips.splice('+i+',0,t);dragIdx=null;saveTrips();renderTrips();drawMap()}" ondragend="this.classList.remove(\'dragging\');document.querySelectorAll(\'.trip-card\').forEach(c=>c.classList.remove(\'drag-over\'))" onclick="openTripDetail(\''+t.id+'\')"><div class="tc-header"><div class="tc-left"><input type="checkbox" class="map-toggle" '+(t.visible!==false?'checked':'')+' onclick="event.stopPropagation();toggleTripVisibility(\''+t.id+'\')"><div class="tc-icon">'+(icons||'🗺')+'</div><div style="min-width:0"><div class="tc-name">'+esc(t.title)+'</div><div class="tc-meta">'+metaParts.join(' · ')+'</div></div></div><div class="tc-total">'+(totalStr||'—')+'</div></div><div class="tc-actions"><button class="btn btn-sm btn-ghost" onclick="event.stopPropagation();editTripTitle(\''+t.id+'\')">✏ '+_t('editTripName')+'</button><button class="btn btn-sm btn-ghost" onclick="event.stopPropagation();duplicateTrip(\''+t.id+'\')">📋 '+_t('duplicate')+'</button><button class="btn btn-sm btn-danger" onclick="event.stopPropagation();confirmDeleteTrip(\''+t.id+'\')">🗑</button></div></div>'
+    const total=currs.map(c=>{const sv=segs.filter(x=>x.price&&(x.currency||'€')===c).reduce((a,x)=>a+p(x.price)*(x.passengers||1),0);const stv=stays.filter(x=>x.price&&(x.currency||'€')===c).reduce((a,x)=>a+p(x.price),0);return c+(sv+stv).toLocaleString(_l(),{minimumFractionDigits:0,maximumFractionDigits:2})}).join(' + ');
+    const icons=[...new Set(segs.map(x=>x.type))].map(tp=>(T[tp]||{}).icon||'🚀');const aIcons=[...new Set(attrs.map(x=>x.category))].map(c=>(A[c]||{}).icon||'📍');const iStr=[...icons,...aIcons].join(' ');
+    const pax=[...new Set([...segs,...stays].map(s=>s.passengers||1))];const paxL=(segs.length||stays.length)?'👥 '+_t('person',{n:pax[0]})+(pax.length>1?' · '+_t('mixed'):''):'';
+    const meta=[segs.length?_t('segmentCount',{n:segs.length}):'',stays.length?_t('stayCount',{n:stays.length}):'',attrs.length?_t('attrCount',{n:attrs.length}):'',paxL,s.createdAt?fd(s.createdAt):''].filter(Boolean).join(' · ');
+    return '<div class="trip-card sc-card" draggable="true" ondragstart="event.stopPropagation();dragScIdx='+j+';dragParentIdx='+i+';this.classList.add(\'dragging\')" ondragover="event.preventDefault();this.classList.add(\'drag-over\')" ondragleave="this.classList.remove(\'drag-over\')" ondrop="event.preventDefault();event.stopPropagation();if(dragScIdx!==null&&dragParentIdx==='+i+'&&dragScIdx!=='+j+'){const a=trips['+i+'].scenarios.splice(dragScIdx,1)[0];trips['+i+'].scenarios.splice('+j+',0,a);dragScIdx=null;dragParentIdx=null;saveTrips();renderTrips();drawMap()}" ondragend="this.classList.remove(\'dragging\');document.querySelectorAll(\'.sc-card\').forEach(c=>c.classList.remove(\'drag-over\'))" onclick="openTripDetail(\''+s.id+'\')"><div class="tc-header"><div class="tc-left"><input type="checkbox" class="map-toggle" '+(s.visible!==false?'checked':'')+' onclick="event.stopPropagation();toggleScenarioVisibility(\''+s.id+'\')"><div class="tc-icon">'+(iStr||'📋')+'</div><div style="min-width:0"><div class="tc-name">'+esc(s.title)+'</div><div class="tc-meta">'+meta+'</div></div></div><div class="tc-total">'+(total||'—')+'</div></div><div class="tc-actions"><button class="btn btn-sm btn-ghost" onclick="event.stopPropagation();copyScenario(\''+s.id+'\')">📄</button><button class="btn btn-sm btn-ghost" onclick="event.stopPropagation();shareScenario(\''+s.id+'\')">📤</button><button class="btn btn-sm btn-ghost" onclick="event.stopPropagation();editScenarioTitle(\''+s.id+'\')">✏ '+_t('editTripName')+'</button><button class="btn btn-sm btn-danger" onclick="event.stopPropagation();confirmDeleteScenario(\''+s.id+'\')">🗑</button></div></div>'
+  };
+
+  // Owned trips
+  if(hasOwn)html+=ownedTrips.map((t,i)=>{
+    const scs=t.scenarios||[];
+    const scCards=scs.map((s,j)=>scCard(s,j,i)).join('');
+    const vScs=scs.filter(s=>s.visible!==false);const vAll=[];vScs.forEach(s=>{vAll.push(...(s.segments||[]));vAll.push(...(s.stays||[]))});
+    const vCurr={};vAll.filter(x=>x.price).forEach(x=>{const c=x.currency||'€';vCurr[c]=(vCurr[c]||0)+p(x.price)*(x.passengers||1)});
+    const vt=Object.entries(vCurr).map(([c,v])=>c+v.toLocaleString(_l(),{minimumFractionDigits:0,maximumFractionDigits:2})).join(' + ');
+    return '<div class="parent-section'+(expandedTripId===t.id?' expanded':'')+'"><div class="parent-header"><div class="parent-title" onclick="expandedTripId=expandedTripId===\''+t.id+'\'?null:\''+t.id+'\';renderTrips()"><input type="checkbox" class="map-toggle" '+(t.visible!==false?'checked':'')+' onclick="event.stopPropagation();toggleTripVisibility(\''+t.id+'\')"><span class="expand-icon">'+(expandedTripId===t.id?'▾':'▸')+'</span>'+esc(t.title)+'</div><div class="parent-sub"><div class="parent-actions"><button class="btn btn-sm btn-ghost" onclick="event.stopPropagation();editTripTitle(\''+t.id+'\')">✏</button>'+(clipboard&&clipboard.type==='scenario'?'<button class="btn btn-sm btn-ghost" onclick="event.stopPropagation();pasteScenario(\''+t.id+'\')">'+_t('paste')+'</button>':'')+'<button class="btn btn-sm btn-ghost" onclick="event.stopPropagation();addScenario(\''+t.id+'\')">+ '+_t('scenario')+'</button><button class="btn btn-sm btn-ghost" onclick="event.stopPropagation();shareTrip(\''+t.id+'\')">📤</button><button class="btn btn-sm btn-ghost" onclick="event.stopPropagation();duplicateTrip(\''+t.id+'\')">📋</button>'+(firebaseUser&&t.ownerId===firebaseUser.uid?'<button class="btn btn-sm btn-ghost" onclick="event.stopPropagation();openMembersModal(\''+t.id+'\')">👥</button>':'')+'<button class="btn btn-sm btn-danger" onclick="event.stopPropagation();confirmDeleteTrip(\''+t.id+'\')">🗑</button></div><div class="parent-total">'+(vt||'—')+'</div></div></div>'+(expandedTripId===t.id?scCards:'')+'</div>'
   }).join('');
+
+  // Collaborative trips
+  if(hasCollab){
+    html+='<div class="shared-section"><div class="shared-header">🤝 '+_t('myCollaborations')+'</div>';
+    collabTrips.forEach(t=>{
+      const scs=t.scenarios||[];
+      const scCards=scs.map((s,j)=>scCard(s,j,ownedTrips.length+collabTrips.indexOf(t))).join('');
+      const vScs=scs.filter(s=>s.visible!==false);const vAll=[];vScs.forEach(s=>{vAll.push(...(s.segments||[]));vAll.push(...(s.stays||[]))});
+      const vCurr={};vAll.filter(x=>x.price).forEach(x=>{const c=x.currency||'€';vCurr[c]=(vCurr[c]||0)+p(x.price)*(x.passengers||1)});
+      const vt=Object.entries(vCurr).map(([c,v])=>c+v.toLocaleString(_l(),{minimumFractionDigits:0,maximumFractionDigits:2})).join(' + ');
+      html+='<div class="parent-section'+(expandedTripId===t.id?' expanded':'')+'"><div class="parent-header"><div class="parent-title" onclick="expandedTripId=expandedTripId===\''+t.id+'\'?null:\''+t.id+'\';renderTrips()"><span class="expand-icon">'+(expandedTripId===t.id?'▾':'▸')+'</span>'+esc(t.title)+' <span style="font-size:11px;color:var(--text3);font-weight:400">👤 '+esc(t.ownerDisplayName||t.ownerEmail)+'</span></div><div class="parent-sub"><div class="parent-actions">'+(clipboard&&clipboard.type==='scenario'?'<button class="btn btn-sm btn-ghost" onclick="event.stopPropagation();pasteScenario(\''+t.id+'\')">'+_t('paste')+'</button>':'')+'<button class="btn btn-sm btn-ghost" onclick="event.stopPropagation();addScenario(\''+t.id+'\')">+ '+_t('scenario')+'</button><button class="btn btn-sm btn-danger" onclick="event.stopPropagation();leaveCollab(\''+t.id+'\')">🚪 '+_t('leaveCollab')+'</button></div><div class="parent-total">'+(vt||'—')+'</div></div></div>'+(expandedTripId===t.id?scCards:'')+'</div>'
+    });
+    html+='</div>';
+  }
+
+  el.innerHTML=html;
   updateOverallTotal();
 }
 function updateOverallTotal(){
   const visible=trips.filter(t=>t.visible!==false);
-  const segAll=[];const stayAll=[];visible.forEach(t=>{segAll.push(...(t.segments||[]));stayAll.push(...(t.stays||[]))});
+  const segAll=[];const stayAll=[];visible.forEach(t=>(t.scenarios||[]).filter(s=>s.visible!==false).forEach(s=>{segAll.push(...(s.segments||[]));stayAll.push(...(s.stays||[]))}));
   const bc={};segAll.filter(x=>x.price).forEach(x=>{const c=x.currency||'€';bc[c]=(bc[c]||0)+p(x.price)*(x.passengers||1)});
   stayAll.filter(x=>x.price).forEach(x=>{const c=x.currency||'€';bc[c]=(bc[c]||0)+p(x.price)});
   const parts=Object.entries(bc).map(([c,v])=>c+v.toLocaleString(_l(),{minimumFractionDigits:0,maximumFractionDigits:2}));
-  const segCount=visible.reduce((s,t)=>s+(t.segments||[]).length,0);
-  const stayCount=visible.reduce((s,t)=>s+(t.stays||[]).length,0);
-  const attrCount=visible.reduce((s,t)=>s+(t.attractions||[]).length,0);
+  const segCount=visible.reduce((s,t)=>s+(t.scenarios||[]).filter(s=>s.visible!==false).reduce((a,s)=>a+(s.segments||[]).length,0),0);
+  const stayCount=visible.reduce((s,t)=>s+(t.scenarios||[]).filter(s=>s.visible!==false).reduce((a,s)=>a+(s.stays||[]).length,0),0);
+  const attrCount=visible.reduce((s,t)=>s+(t.scenarios||[]).filter(s=>s.visible!==false).reduce((a,s)=>a+(s.attractions||[]).length,0),0);
   const tp=[...segAll,...stayAll].reduce((s,x)=>s+(x.passengers||1),0);
   const parts2=[];if(segCount)parts2.push(_t('segmentCount',{n:segCount}));if(stayCount)parts2.push(_t('stayCount',{n:stayCount}));if(attrCount)parts2.push(_t('attrCount',{n:attrCount}));parts2.push(_t('person',{n:tp}));parts2.push(_t('tripCount',{n:visible.length}));
   document.getElementById('totalAmount').textContent=parts.length?parts.join(' + '):'—';
@@ -691,11 +912,12 @@ function updateOverallTotal(){
 
 // ─── RENDER TRIP DETAIL ──────────────────────────────────────────────────────
 function renderTripDetail(){
-  const trip=trips.find(t=>t.id===activeTripId);if(!trip){goToTrips();return}
+  const trip=findScenario(activeTripId);if(!trip){goToTrips();return}
+  const parent=findParentOfScenario(activeTripId);
   const segs=trip.segments||[];const stays=trip.stays||[];
   const paxAll=[...new Set([...segs,...stays].map(s=>s.passengers||1))];
   const paxLabel=segs.length||stays.length?'👥 '+_t('person',{n:paxAll[0]})+(paxAll.length>1?' · '+_t('mixed'):''):'';
-  document.getElementById('tripDetailHeader').innerHTML='<div class="back-row"><button class="back-btn" onclick="goToTrips()">←</button><span class="inline-title">'+esc(trip.title)+'</span>'+(paxLabel?'<span style="font-size:12px;color:var(--text3);font-weight:500;white-space:nowrap">'+paxLabel+'</span>':'')+'<button class="btn btn-sm btn-ghost" onclick="editTripTitle(\''+trip.id+'\')">✏</button>'+(segs.length||stays.length?'<button class="btn btn-sm" onclick="setAllPassengers(\''+trip.id+'\')">'+_t('setAllPassengers')+'</button>':'')+'</div>';
+  document.getElementById('tripDetailHeader').innerHTML='<div class="back-row"><button class="back-btn" onclick="goToTrips()">←</button><span class="inline-title" style="max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(parent?parent.title+' › ':'')+esc(trip.title)+'</span>'+(paxLabel?'<span style="font-size:12px;color:var(--text3);font-weight:500;white-space:nowrap">'+paxLabel+'</span>':'')+'<button class="btn btn-sm btn-ghost" onclick="editScenarioTitle(\''+trip.id+'\')">✏</button>'+(segs.length||stays.length?'<button class="btn btn-sm" onclick="setAllPassengers(\''+trip.id+'\')">'+_t('setAllPassengers')+'</button>':'')+'</div>';
 
   // Segments
   let segHtml='<div class="section-title" style="margin-top:0">'+_t('transport')+(clipboard&&clipboard.type==='seg'?' <button class="btn btn-sm" onclick="pasteSegment()" style="margin-left:8px">'+_t('paste')+'</button>':'')+'</div>';
@@ -763,19 +985,20 @@ function updateTotal(trip){
   document.getElementById('totalCount').textContent=countParts.join(' · ');
   document.getElementById('totalBreakdown').textContent=breakdownParts.join(' · ');
   document.getElementById('totalLabel').textContent=_t('tripTotal',{name:esc(trip.title)});
+  updateOverallTotal();
 }
 
 // ─── SEGMENT CRUD ────────────────────────────────────────────────────────────
-function copySegment(tripId,segId){const trip=trips.find(t=>t.id===tripId);if(!trip)return;const seg=(trip.segments||[]).find(s=>s.id===segId);if(!seg)return;clipboard={type:'seg',data:{...seg}};renderTripDetail();toast(_t('segCopied'))}
-function pasteSegment(){if(!clipboard||clipboard.type!=='seg'){toast(_t('noCopiedSeg'));return}const trip=trips.find(t=>t.id===activeTripId);if(!trip){toast(_t('openTripFirst'));return}const s=clipboard.data;const seg={...s,id:'seg_'+Date.now(),order:trip.segments.length};toast(_t('searchingCoords'));Promise.all([geocode(seg.from),geocode(seg.to)]).then(([f,t])=>{seg.fromLL=f;seg.toLL=t;trip.segments.push(seg);clipboard=null;saveTrips();renderTripDetail();drawMap();toast(_t('segPasted'))})}
-function copyStay(tripId,stayId){const trip=trips.find(t=>t.id===tripId);if(!trip)return;const stay=(trip.stays||[]).find(s=>s.id===stayId);if(!stay)return;clipboard={type:'stay',data:{...stay}};renderTripDetail();toast(_t('stayCopied'))}
-function pasteStay(){if(!clipboard||clipboard.type!=='stay'){toast(_t('noCopiedStay'));return}const trip=trips.find(t=>t.id===activeTripId);if(!trip){toast(_t('openTripFirst'));return}const s=clipboard.data;const stay={...s,id:'stay_'+Date.now()};toast(_t('searchingCoords'));geocode(stay.city).then(ll=>{stay.cityLat=ll;trip.stays.push(stay);clipboard=null;saveTrips();renderTripDetail();drawMap();toast(_t('stayPasted'))})}
+function copySegment(tripId,segId){const trip=findScenario(tripId);if(!trip)return;const seg=(trip.segments||[]).find(s=>s.id===segId);if(!seg)return;clipboard={type:'seg',data:{...seg}};renderTripDetail();toast(_t('segCopied'))}
+function pasteSegment(){if(!clipboard||clipboard.type!=='seg'){toast(_t('noCopiedSeg'));return}const trip=findScenario(activeTripId);if(!trip){toast(_t('openTripFirst'));return}const s=clipboard.data;const seg={...s,id:'seg_'+Date.now(),order:trip.segments.length};toast(_t('searchingCoords'));Promise.all([geocode(seg.from),geocode(seg.to)]).then(([f,t])=>{seg.fromLL=f;seg.toLL=t;trip.segments.push(seg);clipboard=null;saveTrips();renderTripDetail();drawMap();toast(_t('segPasted'))})}
+function copyStay(tripId,stayId){const trip=findScenario(tripId);if(!trip)return;const stay=(trip.stays||[]).find(s=>s.id===stayId);if(!stay)return;clipboard={type:'stay',data:{...stay}};renderTripDetail();toast(_t('stayCopied'))}
+function pasteStay(){if(!clipboard||clipboard.type!=='stay'){toast(_t('noCopiedStay'));return}const trip=findScenario(activeTripId);if(!trip){toast(_t('openTripFirst'));return}const s=clipboard.data;const stay={...s,id:'stay_'+Date.now()};toast(_t('searchingCoords'));geocode(stay.city).then(ll=>{stay.cityLat=ll;trip.stays.push(stay);clipboard=null;saveTrips();renderTripDetail();drawMap();toast(_t('stayPasted'))})}
 function moveSegment(tripId,segId,dir){
-  const trip=trips.find(t=>t.id===tripId);if(!trip)return;const segs=trip.segments;const idx=segs.findIndex(s=>s.id===segId);if(idx===-1)return;const n=idx+dir;if(n<0||n>=segs.length)return;[segs[idx],segs[n]]=[segs[n],segs[idx]];segs.forEach((s,i)=>s.order=i);saveTrips();renderTripDetail();drawMap();toast(_t('orderChanged'))
+  const trip=findScenario(tripId);if(!trip)return;const segs=trip.segments;const idx=segs.findIndex(s=>s.id===segId);if(idx===-1)return;const n=idx+dir;if(n<0||n>=segs.length)return;[segs[idx],segs[n]]=[segs[n],segs[idx]];segs.forEach((s,i)=>s.order=i);saveTrips();renderTripDetail();drawMap();toast(_t('orderChanged'))
 }
 function selectSegTransport(type,el){addSegTransport=type;document.querySelectorAll('#addSegTransport .transport-btn').forEach(b=>b.classList.remove('selected'));el.classList.add('selected')}
 async function addSegment(){
-  const trip=trips.find(t=>t.id===activeTripId);if(!trip)return;
+  const trip=findScenario(activeTripId);if(!trip)return;
   const from=document.getElementById('seg-from').value.trim();const to=document.getElementById('seg-to').value.trim();
   if(!to){toast(_t('arrivalRequired'));return}if(!addSegTransport){toast(_t('selectType'));return}
   const lastSeg=trip.segments.length?trip.segments[trip.segments.length-1]:null;const fromCity=from||(lastSeg?lastSeg.to:'');
@@ -789,22 +1012,22 @@ function clearSegForm(){
   document.getElementById('seg-passengers').value='1';addSegTransport=null;document.querySelectorAll('#addSegTransport .transport-btn').forEach(b=>b.classList.remove('selected'))
 }
 function openEditSeg(tripId,segId){
-  const trip=trips.find(t=>t.id===tripId);if(!trip)return;const seg=(trip.segments||[]).find(s=>s.id===segId);if(!seg)return;editingSegKey={tripId,segId};
+  const trip=findScenario(tripId);if(!trip)return;const seg=(trip.segments||[]).find(s=>s.id===segId);if(!seg)return;editingSegKey={tripId,segId};
   document.getElementById('editSegFormBody').innerHTML='<div style="display:flex;flex-direction:column;gap:10px"><div class="form-group"><div class="section-title">'+_t('transport')+'</div><div class="transport-grid" id="editSegTransport">'+Object.entries(T).map(([k,v])=>'<button class="transport-btn'+(seg.type===k?' selected':'')+'" onclick="document.querySelectorAll(\'#editSegTransport .transport-btn\').forEach(b=>b.classList.remove(\'selected\'));this.classList.add(\'selected\');document.getElementById(\'edit-seg-type\').value=\''+k+'\'"><span class="icon">'+v.icon+'</span>'+_t('tp_'+k)+'</button>').join('')+'</div><input type="hidden" id="edit-seg-type" value="'+seg.type+'"></div><div class="form-row"><div class="form-group"><label class="form-label">'+_t('departure')+'</label><input type="text" id="edit-seg-from" value="'+esc(seg.from)+'"></div><div class="form-group"><label class="form-label">'+_t('arrival')+'</label><input type="text" id="edit-seg-to" value="'+esc(seg.to)+'"></div></div><div class="form-row"><div class="form-group"><label class="form-label">'+_t('provider')+'</label><input type="text" id="edit-seg-provider" value="'+esc(seg.provider||'')+'"></div><div class="form-group"><label class="form-label">'+_t('price')+'</label><div class="currency-row"><select id="edit-seg-currency">'+['€','₺','$','£'].map(c=>'<option'+(seg.currency===c?' selected':'')+'>'+c+'</option>').join('')+'</select><input type="text" inputmode="decimal" id="edit-seg-price" value="'+(seg.price||'')+'"></div></div></div><div class="form-row"><div class="form-group"><label class="form-label">'+_t('date')+'</label><input type="text" id="edit-seg-date" value="'+esc(seg.date||'')+'"></div><div class="form-group"><label class="form-label">'+_t('duration')+'</label><input type="text" id="edit-seg-duration" value="'+esc(seg.duration||'')+'"></div></div><div class="form-row"><div class="form-group"><label class="form-label">'+_t('passengers')+'</label><input type="number" id="edit-seg-passengers" value="'+(seg.passengers||1)+'" min="1" max="20"></div><div class="form-group"><label class="form-label">'+_t('note')+'</label><input type="text" id="edit-seg-note" value="'+esc(seg.note||'')+'"></div></div></div>';document.getElementById('editSegModal').classList.add('open')
 }
 async function confirmEditSeg(){
-  if(!editingSegKey)return;const{tripId,segId}=editingSegKey;const trip=trips.find(t=>t.id===tripId);if(!trip)return;const idx=(trip.segments||[]).findIndex(s=>s.id===segId);if(idx===-1)return;const seg=trip.segments[idx];const nF=document.getElementById('edit-seg-from').value.trim();const nT=document.getElementById('edit-seg-to').value.trim();const gn=nF!==seg.from||nT!==seg.to;
+  if(!editingSegKey)return;const{tripId,segId}=editingSegKey;const trip=findScenario(tripId);if(!trip)return;const idx=(trip.segments||[]).findIndex(s=>s.id===segId);if(idx===-1)return;const seg=trip.segments[idx];const nF=document.getElementById('edit-seg-from').value.trim();const nT=document.getElementById('edit-seg-to').value.trim();const gn=nF!==seg.from||nT!==seg.to;
   trip.segments[idx]={...seg,type:document.getElementById('edit-seg-type').value,from:nF,to:nT,provider:document.getElementById('edit-seg-provider').value.trim(),price:document.getElementById('edit-seg-price').value.replace(',','.'),currency:document.getElementById('edit-seg-currency').value,date:document.getElementById('edit-seg-date').value.trim(),duration:document.getElementById('edit-seg-duration').value.trim(),note:document.getElementById('edit-seg-note').value.trim(),passengers:parseInt(document.getElementById('edit-seg-passengers').value)||1};
   if(gn){toast(_t('coordsUpdating'));const[f,t]=await Promise.all([geocode(nF),geocode(nT)]);trip.segments[idx].fromLL=f;trip.segments[idx].toLL=t}
   saveTrips();cm('editSegModal');editingSegKey=null;renderTripDetail();drawMap();toast(_t('segmentUpdated'))
 }
-function confirmDeleteSeg(tripId,segId){const trip=trips.find(t=>t.id===tripId);const seg=(trip.segments||[]).find(s=>s.id===segId);document.getElementById('deleteModalTitle').textContent=_t('deleteSegConfirm',{f:seg.from,t:seg.to});document.getElementById('deleteModalMsg').textContent='';document.getElementById('deleteConfirmBtn').onclick=()=>deleteSeg(tripId,segId);document.getElementById('deleteModal').classList.add('open')}
-function deleteSeg(tripId,segId){const trip=trips.find(t=>t.id===tripId);if(!trip)return;trip.segments=(trip.segments||[]).filter(s=>s.id!==segId);trip.segments.forEach((s,i)=>s.order=i);saveTrips();cm('deleteModal');renderTripDetail();drawMap();toast(_t('segmentDeleted'))}
+function confirmDeleteSeg(tripId,segId){const trip=findScenario(tripId);const seg=(trip.segments||[]).find(s=>s.id===segId);document.getElementById('deleteModalTitle').textContent=_t('deleteSegConfirm',{f:seg.from,t:seg.to});document.getElementById('deleteModalMsg').textContent='';document.getElementById('deleteConfirmBtn').onclick=()=>deleteSeg(tripId,segId);document.getElementById('deleteModal').classList.add('open')}
+function deleteSeg(tripId,segId){const trip=findScenario(tripId);if(!trip)return;trip.segments=(trip.segments||[]).filter(s=>s.id!==segId);trip.segments.forEach((s,i)=>s.order=i);saveTrips();cm('deleteModal');renderTripDetail();drawMap();toast(_t('segmentDeleted'))}
 
 // ─── STAY CRUD ───────────────────────────────────────────────────────────────
 async function addStay(){
   try {
-    const trip=trips.find(t=>t.id===activeTripId);if(!trip)return;
+    const trip=findScenario(activeTripId);if(!trip)return;
     const name=document.getElementById('stay-name').value.trim();const city=document.getElementById('stay-city').value.trim();
     if(!name){toast(_t('nameRequired'));return}if(!city){toast(_t('cityRequired'));return}
     const stay={id:'stay_'+Date.now(),name,city,checkIn:document.getElementById('stay-checkin').value.trim(),checkOut:document.getElementById('stay-checkout').value.trim(),nights:parseInt(document.getElementById('stay-nights').value)||1,price:document.getElementById('stay-price').value.replace(',','.'),currency:document.getElementById('stay-currency').value,passengers:parseInt(document.getElementById('stay-passengers').value)||1,note:document.getElementById('stay-note').value.trim(),cityLat:null};
@@ -814,22 +1037,22 @@ async function addStay(){
 }
 function clearStayForm(){['stay-name','stay-city','stay-checkin','stay-checkout','stay-price','stay-note'].forEach(id=>document.getElementById(id).value='');document.getElementById('stay-nights').value='1';document.getElementById('stay-passengers').value='1'}
 function openEditStay(tripId,stayId){
-  const trip=trips.find(t=>t.id===tripId);if(!trip)return;const stay=(trip.stays||[]).find(s=>s.id===stayId);if(!stay)return;editingStayId={tripId,stayId};
+  const trip=findScenario(tripId);if(!trip)return;const stay=(trip.stays||[]).find(s=>s.id===stayId);if(!stay)return;editingStayId={tripId,stayId};
   document.getElementById('editStayFormBody').innerHTML='<div style="display:flex;flex-direction:column;gap:10px"><div class="form-row"><div class="form-group"><label class="form-label">'+_t('hotelName')+'</label><input type="text" id="edit-stay-name" value="'+esc(stay.name)+'"></div><div class="form-group"><label class="form-label">'+_t('city')+'</label><input type="text" id="edit-stay-city" value="'+esc(stay.city)+'"></div></div><div class="form-row"><div class="form-group"><label class="form-label">'+_t('checkIn')+'</label><input type="text" id="edit-stay-checkin" value="'+esc(stay.checkIn||'')+'"></div><div class="form-group"><label class="form-label">'+_t('checkOut')+'</label><input type="text" id="edit-stay-checkout" value="'+esc(stay.checkOut||'')+'"></div></div><div class="form-row"><div class="form-group"><label class="form-label">'+_t('nights')+'</label><input type="number" id="edit-stay-nights" value="'+(stay.nights||1)+'" min="1" max="90"></div><div class="form-group"><label class="form-label">'+_t('price')+'</label><div class="currency-row"><select id="edit-stay-currency">'+['€','₺','$','£'].map(c=>'<option'+(stay.currency===c?' selected':'')+'>'+c+'</option>').join('')+'</select><input type="text" inputmode="decimal" id="edit-stay-price" value="'+(stay.price||'')+'"></div></div></div><div class="form-row"><div class="form-group"><label class="form-label">'+_t('passengers')+'</label><input type="number" id="edit-stay-passengers" value="'+(stay.passengers||1)+'" min="1" max="20"></div><div class="form-group"><label class="form-label">'+_t('note')+'</label><input type="text" id="edit-stay-note" value="'+esc(stay.note||'')+'"></div></div></div>';document.getElementById('editStayModal').classList.add('open')
 }
 async function confirmEditStay(){
-  if(!editingStayId)return;const{tripId,stayId}=editingStayId;const trip=trips.find(t=>t.id===tripId);if(!trip)return;const idx=(trip.stays||[]).findIndex(s=>s.id===stayId);if(idx===-1)return;const stay=trip.stays[idx];const nC=document.getElementById('edit-stay-city').value.trim();const gn=nC!==stay.city;
+  if(!editingStayId)return;const{tripId,stayId}=editingStayId;const trip=findScenario(tripId);if(!trip)return;const idx=(trip.stays||[]).findIndex(s=>s.id===stayId);if(idx===-1)return;const stay=trip.stays[idx];const nC=document.getElementById('edit-stay-city').value.trim();const gn=nC!==stay.city;
   trip.stays[idx]={...stay,name:document.getElementById('edit-stay-name').value.trim(),city:nC,checkIn:document.getElementById('edit-stay-checkin').value.trim(),checkOut:document.getElementById('edit-stay-checkout').value.trim(),nights:parseInt(document.getElementById('edit-stay-nights').value)||1,price:document.getElementById('edit-stay-price').value.replace(',','.'),currency:document.getElementById('edit-stay-currency').value,passengers:parseInt(document.getElementById('edit-stay-passengers').value)||1,note:document.getElementById('edit-stay-note').value.trim()};
   if(gn){toast(_t('coordsUpdating'));trip.stays[idx].cityLat=await geocode(nC)}
   saveTrips();cm('editStayModal');editingStayId=null;renderTripDetail();drawMap();toast(_t('stayUpdated'))
 }
-function confirmDeleteStay(tripId,stayId){const trip=trips.find(t=>t.id===tripId);const stay=(trip.stays||[]).find(s=>s.id===stayId);document.getElementById('deleteModalTitle').textContent=_t('deleteStayConfirm',{n:stay.name});document.getElementById('deleteModalMsg').textContent='';document.getElementById('deleteConfirmBtn').onclick=()=>deleteStay(tripId,stayId);document.getElementById('deleteModal').classList.add('open')}
-function deleteStay(tripId,stayId){const trip=trips.find(t=>t.id===tripId);if(!trip)return;trip.stays=(trip.stays||[]).filter(s=>s.id!==stayId);saveTrips();cm('deleteModal');renderTripDetail();drawMap();toast(_t('stayDeleted'))}
+function confirmDeleteStay(tripId,stayId){const trip=findScenario(tripId);const stay=(trip.stays||[]).find(s=>s.id===stayId);document.getElementById('deleteModalTitle').textContent=_t('deleteStayConfirm',{n:stay.name});document.getElementById('deleteModalMsg').textContent='';document.getElementById('deleteConfirmBtn').onclick=()=>deleteStay(tripId,stayId);document.getElementById('deleteModal').classList.add('open')}
+function deleteStay(tripId,stayId){const trip=findScenario(tripId);if(!trip)return;trip.stays=(trip.stays||[]).filter(s=>s.id!==stayId);saveTrips();cm('deleteModal');renderTripDetail();drawMap();toast(_t('stayDeleted'))}
 
 // ─── ATTRACTION CRUD ─────────────────────────────────────────────────────────
 function selectAttrCategory(cat,el){attrCategory=cat;document.querySelectorAll('#attrList .transport-btn').forEach(b=>b.classList.remove('selected'));if(el)el.classList.add('selected')}
 async function addAttraction(){
-  const trip=trips.find(t=>t.id===activeTripId);if(!trip)return;
+  const trip=findScenario(activeTripId);if(!trip)return;
   const name=document.getElementById('attr-name').value.trim();const city=document.getElementById('attr-city').value.trim();
   if(!name){toast(_t('nameRequired'));return}if(!city){toast(_t('cityRequired'));return}
   if(!attrCategory){toast(_t('selectCategory'));return}
@@ -839,28 +1062,28 @@ async function addAttraction(){
 }
 function clearAttrForm(){document.getElementById('attr-name').value='';document.getElementById('attr-city').value='';document.getElementById('attr-time').value='';document.getElementById('attr-note').value='';attrCategory=null;document.querySelectorAll('#attrList .transport-btn').forEach(b=>b.classList.remove('selected'))}
 function openEditAttr(tripId,attrId){
-  const trip=trips.find(t=>t.id===tripId);if(!trip)return;const attr=(trip.attractions||[]).find(a=>a.id===attrId);if(!attr)return;editingAttrId={tripId,attrId};
+  const trip=findScenario(tripId);if(!trip)return;const attr=(trip.attractions||[]).find(a=>a.id===attrId);if(!attr)return;editingAttrId={tripId,attrId};
   document.getElementById('editAttrFormBody').innerHTML='<div style="display:flex;flex-direction:column;gap:10px"><div class="form-group"><div class="section-title">'+_t('selectCategory')+'</div><div style="display:flex;gap:4px">'+Object.entries(A).map(([k,v])=>'<button class="transport-btn'+(attr.category===k?' selected':'')+'" onclick="document.querySelectorAll(\'#editAttrFormBody .transport-btn\').forEach(b=>b.classList.remove(\'selected\'));this.classList.add(\'selected\');document.getElementById(\'edit-attr-category\').value=\''+k+'\'"><span class="icon">'+v.icon+'</span>'+_t('cat_'+k)+'</button>').join('')+'</div><input type="hidden" id="edit-attr-category" value="'+attr.category+'"></div><div class="form-row"><div class="form-group"><label class="form-label">'+_t('attrName')+'</label><input type="text" id="edit-attr-name" value="'+esc(attr.name)+'"></div><div class="form-group"><label class="form-label">'+_t('city')+'</label><input type="text" id="edit-attr-city" value="'+esc(attr.city)+'"></div></div><div class="form-row"><div class="form-group"><label class="form-label">'+_t('time')+'</label><input type="time" id="edit-attr-time" value="'+esc(attr.time||'')+'"></div><div class="form-group"><label class="form-label">'+_t('note')+'</label><input type="text" id="edit-attr-note" value="'+esc(attr.note||'')+'"></div></div></div>';document.getElementById('editAttrModal').classList.add('open')
 }
 async function confirmEditAttr(){
-  if(!editingAttrId)return;const{tripId,attrId}=editingAttrId;const trip=trips.find(t=>t.id===tripId);if(!trip)return;const idx=(trip.attractions||[]).findIndex(a=>a.id===attrId);if(idx===-1)return;const attr=trip.attractions[idx];const nC=document.getElementById('edit-attr-city').value.trim();const gn=nC!==attr.city;
+  if(!editingAttrId)return;const{tripId,attrId}=editingAttrId;const trip=findScenario(tripId);if(!trip)return;const idx=(trip.attractions||[]).findIndex(a=>a.id===attrId);if(idx===-1)return;const attr=trip.attractions[idx];const nC=document.getElementById('edit-attr-city').value.trim();const gn=nC!==attr.city;
   trip.attractions[idx]={...attr,name:document.getElementById('edit-attr-name').value.trim(),city:nC,category:document.getElementById('edit-attr-category').value,time:document.getElementById('edit-attr-time').value,note:document.getElementById('edit-attr-note').value.trim()};
   if(gn){toast(_t('coordsUpdating'));trip.attractions[idx].lat=await geocode(nC)}
   saveTrips();cm('editAttrModal');editingAttrId=null;renderTripDetail();drawMap();toast(_t('attrUpdated'))
 }
-function confirmDeleteAttr(tripId,attrId){const trip=trips.find(t=>t.id===tripId);const attr=(trip.attractions||[]).find(a=>a.id===attrId);document.getElementById('deleteModalTitle').textContent=_t('deleteAttrConfirm',{n:attr.name});document.getElementById('deleteModalMsg').textContent='';document.getElementById('deleteConfirmBtn').onclick=()=>deleteAttr(tripId,attrId);document.getElementById('deleteModal').classList.add('open')}
-function deleteAttr(tripId,attrId){const trip=trips.find(t=>t.id===tripId);if(!trip)return;trip.attractions=(trip.attractions||[]).filter(a=>a.id!==attrId);saveTrips();cm('deleteModal');renderTripDetail();drawMap();toast(_t('attrDeleted'))}
-function copyAttr(tripId,attrId){const trip=trips.find(t=>t.id===tripId);if(!trip)return;const attr=(trip.attractions||[]).find(a=>a.id===attrId);if(!attr)return;clipboard={type:'attr',data:{...attr}};renderTripDetail();toast(_t('attrCopied'))}
-function pasteAttr(){if(!clipboard||clipboard.type!=='attr'){toast(_t('noCopiedAttr'));return}const trip=trips.find(t=>t.id===activeTripId);if(!trip){toast(_t('openTripFirst'));return}const s=clipboard.data;const attr={...s,id:'attr_'+Date.now()};toast(_t('searchingCoords'));geocode(attr.city).then(ll=>{attr.lat=ll;trip.attractions.push(attr);clipboard=null;saveTrips();renderTripDetail();drawMap();toast(_t('attrPasted'))})}
+function confirmDeleteAttr(tripId,attrId){const trip=findScenario(tripId);const attr=(trip.attractions||[]).find(a=>a.id===attrId);document.getElementById('deleteModalTitle').textContent=_t('deleteAttrConfirm',{n:attr.name});document.getElementById('deleteModalMsg').textContent='';document.getElementById('deleteConfirmBtn').onclick=()=>deleteAttr(tripId,attrId);document.getElementById('deleteModal').classList.add('open')}
+function deleteAttr(tripId,attrId){const trip=findScenario(tripId);if(!trip)return;trip.attractions=(trip.attractions||[]).filter(a=>a.id!==attrId);saveTrips();cm('deleteModal');renderTripDetail();drawMap();toast(_t('attrDeleted'))}
+function copyAttr(tripId,attrId){const trip=findScenario(tripId);if(!trip)return;const attr=(trip.attractions||[]).find(a=>a.id===attrId);if(!attr)return;clipboard={type:'attr',data:{...attr}};renderTripDetail();toast(_t('attrCopied'))}
+function pasteAttr(){if(!clipboard||clipboard.type!=='attr'){toast(_t('noCopiedAttr'));return}const trip=findScenario(activeTripId);if(!trip){toast(_t('openTripFirst'));return}const s=clipboard.data;const attr={...s,id:'attr_'+Date.now()};toast(_t('searchingCoords'));geocode(attr.city).then(ll=>{attr.lat=ll;trip.attractions.push(attr);clipboard=null;saveTrips();renderTripDetail();drawMap();toast(_t('attrPasted'))})}
 async function retryAttrGeocode(tripId,attrId){
-  const trip=trips.find(t=>t.id===tripId);if(!trip)return;const attr=(trip.attractions||[]).find(a=>a.id===attrId);if(!attr)return;
+  const trip=findScenario(tripId);if(!trip)return;const attr=(trip.attractions||[]).find(a=>a.id===attrId);if(!attr)return;
   toast(_t('searchingCoords'));const ll=await geocode(attr.city);
   if(ll){attr.lat=ll;saveTrips();renderTripDetail();drawMap();toast(_t('coordsUpdated'))}else{toast(_t('coordsNotFound'))}
 }
 
 // ─── SET ALL PASSENGERS ──────────────────────────────────────────────────────
 function setAllPassengers(tripId){
-  const trip=trips.find(t=>t.id===tripId);if(!trip||!((trip.segments||[]).length||(trip.stays||[]).length))return;
+  const trip=findScenario(tripId);if(!trip||!((trip.segments||[]).length||(trip.stays||[]).length))return;
   const first=(trip.segments||[])[0]||(trip.stays||[])[0];const cur=first.passengers||1;
   const val=prompt(_t('promptPassengers'),cur);if(val===null)return;
   const num=parseInt(val);if(!num||num<1||num>99){toast(_t('validNumber'));return}
@@ -870,20 +1093,106 @@ function setAllPassengers(tripId){
 
 // ─── TRIP CRUD ───────────────────────────────────────────────────────────────
 function createNewTrip(){document.getElementById('newTripTitle').value='';document.getElementById('newTripModal').classList.add('open');setTimeout(()=>document.getElementById('newTripTitle').focus(),100)}
-function confirmNewTrip(){const t=document.getElementById('newTripTitle').value.trim();if(!t){toast(_t('titleRequired'));return}const trip={id:'trip_'+Date.now(),title:t,visible:true,createdAt:new Date().toISOString(),segments:[],stays:[],attractions:[]};trips.push(trip);saveTrips();cm('newTripModal');openTripDetail(trip.id);toast(_t('tripCreated'))}
-function editTripTitle(tripId){const trip=trips.find(t=>t.id===tripId);if(!trip)return;editingTripId=tripId;document.getElementById('editTripTitleInput').value=trip.title;document.getElementById('editTripModal').classList.add('open');setTimeout(()=>document.getElementById('editTripTitleInput').focus(),100)}
-function confirmEditTrip(){const t=document.getElementById('editTripTitleInput').value.trim();if(!t){toast(_t('titleRequired'));return}const trip=trips.find(t=>t.id===editingTripId);if(trip){trip.title=t;saveTrips();renderTrips();if(activeTripId)renderTripDetail();toast(_t('tripUpdated'))}cm('editTripModal');editingTripId=null}
+function confirmNewTrip(){const t=document.getElementById('newTripTitle').value.trim();if(!t){toast(_t('titleRequired'));return}const scenarioId='sc_'+Date.now();const trip={id:'trip_'+Date.now(),title:t,visible:true,createdAt:new Date().toISOString(),scenarios:[{id:scenarioId,title:_t('defaultScenario'),createdAt:new Date().toISOString(),visible:true,segments:[],stays:[],attractions:[]}]};trips.push(trip);saveTrips();cm('newTripModal');openTripDetail(scenarioId);toast(_t('tripCreated'))}
+function editTripTitle(tripId){const trip=trips.find(t=>t.id===tripId);if(!trip)return;editingTripId=tripId;document.getElementById('editTripModalTitle').textContent=_t('editTripName');document.getElementById('editTripTitleInput').value=trip.title;document.getElementById('editTripModal').classList.add('open');setTimeout(()=>document.getElementById('editTripTitleInput').focus(),100)}
+function confirmEditTrip(){const t=document.getElementById('editTripTitleInput').value.trim();if(!t){toast(_t('titleRequired'));return}const sc=findScenario(editingTripId);if(sc){sc.title=t;saveTrips();renderTrips();if(activeTripId)renderTripDetail();toast(_t('tripUpdated'));cm('editTripModal');editingTripId=null;return}const trip=trips.find(t=>t.id===editingTripId);if(trip){trip.title=t;saveTrips();renderTrips();if(activeTripId)renderTripDetail();toast(_t('tripUpdated'))}cm('editTripModal');editingTripId=null}
 function confirmDeleteTrip(tripId){const trip=trips.find(t=>t.id===tripId);document.getElementById('deleteModalTitle').textContent=_t('deleteConfirmTitle');document.getElementById('deleteModalMsg').textContent=_t('deleteConfirmMsg',{t:trip.title});document.getElementById('deleteConfirmBtn').onclick=()=>deleteTrip(tripId);document.getElementById('deleteModal').classList.add('open')}
-function deleteTrip(tripId){trips=trips.filter(t=>t.id!==tripId);saveTrips();cm('deleteModal');if(activeTripId===tripId){activeTripId=null;goToTrips()}else renderTrips();drawMap();toast(_t('tripDeleted'))}
+function deleteTrip(tripId){trips=trips.filter(t=>t.id!==tripId);saveTrips();cm('deleteModal');if(activeTripId&&!findScenario(activeTripId)){activeTripId=null;goToTrips()}else renderTrips();drawMap();toast(_t('tripDeleted'))}
 function toggleTripVisibility(tripId){const trip=trips.find(t=>t.id===tripId);if(!trip)return;trip.visible=trip.visible===false?true:false;saveTrips();drawMap();updateOverallTotal()}
-function duplicateTrip(tripId){const src=trips.find(t=>t.id===tripId);if(!src)return;const trip={id:'trip_'+Date.now(),title:src.title+' ('+_t('duplicate')+')',visible:true,createdAt:new Date().toISOString(),segments:src.segments.map(s=>({...s,id:'seg_'+Date.now()+'_'+Math.random().toString(36).slice(2,6)})),stays:src.stays.map(s=>({...s,id:'stay_'+Date.now()+'_'+Math.random().toString(36).slice(2,6)})),attractions:src.attractions.map(s=>({...s,id:'attr_'+Date.now()+'_'+Math.random().toString(36).slice(2,6)}))};trips.push(trip);saveTrips();renderTrips();toast(_t('tripDuplicated'))}
+function toggleScenarioVisibility(scId){const sc=findScenario(scId);if(!sc)return;sc.visible=sc.visible===false?true:false;saveTrips();drawMap();updateOverallTotal()}
+function duplicateTrip(tripId){const src=trips.find(t=>t.id===tripId);if(!src)return;const now=Date.now();const rand=()=>Math.random().toString(36).slice(2,6);const trip={id:'trip_'+now,title:src.title+' ('+_t('duplicate')+')',visible:true,createdAt:new Date().toISOString(),scenarios:(src.scenarios||[]).map(s=>({...s,id:'sc_'+now+'_'+rand(),segments:(s.segments||[]).map(x=>({...x,id:'seg_'+now+'_'+rand()})),stays:(s.stays||[]).map(x=>({...x,id:'stay_'+now+'_'+rand()})),attractions:(s.attractions||[]).map(x=>({...x,id:'attr_'+now+'_'+rand()}))}))};trips.push(trip);saveTrips();renderTrips();toast(_t('tripDuplicated'))}
+function addScenario(parentId){const parent=trips.find(t=>t.id===parentId);if(!parent)return;const sId='sc_'+Date.now();if(!parent.scenarios)parent.scenarios=[];parent.scenarios.push({id:sId,title:_t('newScenario'),createdAt:new Date().toISOString(),visible:true,segments:[],stays:[],attractions:[]});saveTrips();renderTrips();toast(_t('scenarioAdded'))}
+function editScenarioTitle(sId){const sc=findScenario(sId);if(!sc)return;editingTripId=sId;document.getElementById('editTripModalTitle').textContent=_t('editScenarioName');document.getElementById('editTripTitleInput').value=sc.title;document.getElementById('editTripModal').classList.add('open');setTimeout(()=>document.getElementById('editTripTitleInput').focus(),100)}
+function confirmDeleteScenario(sId){const sc=findScenario(sId);if(!sc)return;const p=findParentOfScenario(sId);document.getElementById('deleteModalTitle').textContent=_t('deleteScenarioConfirm');document.getElementById('deleteModalMsg').textContent=_t('deleteScenarioMsg',{t:sc.title});document.getElementById('deleteConfirmBtn').onclick=()=>deleteScenario(sId);document.getElementById('deleteModal').classList.add('open')}
+function deleteScenario(sId){const p=findParentOfScenario(sId);if(!p)return;p.scenarios=(p.scenarios||[]).filter(s=>s.id!==sId);saveTrips();cm('deleteModal');if(activeTripId===sId){activeTripId=null;goToTrips()}else renderTrips();drawMap();toast(_t('scenarioDeleted'))}
+function copyScenario(sId){const sc=findScenario(sId);if(!sc)return;clipboard={type:'scenario',data:{...sc,id:null,title:sc.title+' ('+_t('duplicate')+')',segments:(sc.segments||[]).map(s=>({...s})),stays:(sc.stays||[]).map(s=>({...s})),attractions:(sc.attractions||[]).map(s=>({...s}))}};renderTrips();toast(_t('scenarioCopied'))}
+function pasteScenario(parentId){if(!clipboard||clipboard.type!=='scenario'){toast(_t('noCopiedScenario'));return}const p=trips.find(t=>t.id===parentId);if(!p)return;const now=Date.now();const rand=()=>Math.random().toString(36).slice(2,6);const sc={...clipboard.data,id:'sc_'+now+'_'+rand(),segments:(clipboard.data.segments||[]).map(x=>({...x,id:'seg_'+now+'_'+rand()})),stays:(clipboard.data.stays||[]).map(x=>({...x,id:'stay_'+now+'_'+rand()})),attractions:(clipboard.data.attractions||[]).map(x=>({...x,id:'attr_'+now+'_'+rand()}))};p.scenarios.push(sc);clipboard=null;saveTrips();renderTrips();toast(_t('scenarioPasted'))}
+
+// ─── SHARING & MEMBERS ──────────────────────────────────────────────────────
+let shareTargetId=null;
+function shareScenario(scId){if(!firebaseUser){toast(_t('loginRequired'));return}const sc=findScenario(scId);if(!sc)return;shareTargetId=scId;document.getElementById('shareEmailInput').value='';document.getElementById('shareModalTitle').textContent=_t('shareModalTitle');document.getElementById('shareEmailLabel').textContent=_t('shareEmailLabel');document.getElementById('shareCancel').textContent=_t('shareCancel');document.getElementById('shareConfirm').textContent=_t('shareConfirm');document.getElementById('shareModal').classList.add('open');setTimeout(()=>document.getElementById('shareEmailInput').focus(),100)}
+function shareTrip(tripId){if(!firebaseUser){toast(_t('loginRequired'));return}const t=trips.find(t=>t.id===tripId);if(!t)return;shareTargetId=tripId;document.getElementById('shareEmailInput').value='';document.getElementById('shareModalTitle').textContent=_t('shareTripModalTitle');document.getElementById('shareEmailLabel').textContent=_t('shareEmailLabel');document.getElementById('shareCancel').textContent=_t('shareCancel');document.getElementById('shareConfirm').textContent=_t('shareConfirm');document.getElementById('shareModal').classList.add('open');setTimeout(()=>document.getElementById('shareEmailInput').focus(),100)}
+async function confirmShare(){const email=document.getElementById('shareEmailInput').value.trim();if(!email||!email.includes('@')){toast(_t('validEmail'));return}if(!firebaseUser||!shareTargetId)return;try{
+  const ue=await firestoreDB.collection('userEmails').doc(email).get();
+  if(!ue.exists){toast(_t('error')+'User not found (has not logged in since update)');return}
+  const{uid}=ue.data();
+  const trip=trips.find(t=>t.id===shareTargetId);
+  if(!trip)return;
+  if(trip.ownerId!==firebaseUser.uid){toast(_t('error')+'Only the owner can share');return}
+  if(!trip.memberIds)trip.memberIds=[];
+  if(trip.memberIds.includes(uid)){toast(_t('error')+'Already a member');return}
+  trip.memberIds.push(uid);
+  saveTrips();
+  if(typeof EMAILJS_CONFIG!=='undefined'&&EMAILJS_CONFIG.publicKey&&EMAILJS_CONFIG.publicKey!=='YOUR_EMAILJS_PUBLIC_KEY'){try{emailjs.init(EMAILJS_CONFIG.publicKey);emailjs.send(EMAILJS_CONFIG.serviceId,EMAILJS_CONFIG.templateId,{to_email:email,subject:_t('emailSubject',{sender:trip.ownerDisplayName||firebaseUser.email,type:_t('emailTrip')}),body_html:'<div style="font-family:-apple-system,BlinkMacSystemFont,\'Segoe UI\',Roboto,sans-serif;max-width:480px;margin:0 auto;padding:32px 24px"><div style="font-size:24px;font-weight:700;letter-spacing:-.03em;margin-bottom:4px">✈ RouteLog</div><div style="font-size:13px;color:#6b6760;margin-bottom:24px">'+_t('appSubtitle')+'</div><div style="border:1px solid #e2ddd5;border-radius:10px;padding:24px"><p style="margin:0 0 16px;font-size:15px;line-height:1.5;color:#1a1916">'+_t('emailBody',{sender:trip.ownerDisplayName||firebaseUser.email,type:_t('emailTrip'),item:trip.title})+'</p><a href="https://'+FIREBASE_CONFIG.projectId+'.web.app" style="display:inline-block;padding:10px 24px;background:#1a1916;color:#fff;text-decoration:none;border-radius:6px;font-size:14px;font-weight:500">'+_t('emailBtn')+'</a></div><div style="margin-top:16px;font-size:11px;color:#9e9a93">'+_t('emailFooter')+'</div></div>'}).then(()=>{},()=>{})}catch(e){}}
+  cm('shareModal');shareTargetId=null;toast(_t('sharedDone'));
+}catch(e){toast(_t('error')+e.message)}}
+
+// Member management
+let membersTripId=null;
+function openMembersModal(tripId){
+  const trip=trips.find(t=>t.id===tripId);
+  if(!trip||t.ownerId!==(firebaseUser||{}).uid){toast(_t('error'));return}
+  membersTripId=tripId;
+  document.getElementById('membersModalTitle').textContent=_t('manageMembers')+': '+esc(trip.title);
+  document.getElementById('memberEmailInput').value='';
+  renderMembersList();
+  document.getElementById('membersModal').classList.add('open');
+  setTimeout(()=>document.getElementById('memberEmailInput').focus(),100);
+}
+function renderMembersList(){
+  const trip=trips.find(t=>t.id===membersTripId);
+  if(!trip){document.getElementById('membersList').innerHTML='';return}
+  const ids=trip.memberIds||[];
+  if(!ids.length){document.getElementById('membersList').innerHTML='<div style="font-size:13px;color:var(--text3);padding:12px 0">'+_t('sharedDone')+'</div>';return}
+  document.getElementById('membersList').innerHTML=ids.map((uid,i)=>{
+    const name=uid===firebaseUser.uid?firebaseUser.displayName||firebaseUser.email:uid;
+    return '<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)"><span style="font-size:13px">👤 '+esc(name)+'</span><button class="btn btn-sm btn-danger" onclick="removeMember(\''+uid+'\')">🗑</button></div>'
+  }).join('');
+}
+async function confirmAddMember(){
+  const email=document.getElementById('memberEmailInput').value.trim();
+  if(!email||!email.includes('@')){toast(_t('validEmail'));return}
+  if(!firebaseUser||!membersTripId)return;
+  try{
+    const ue=await firestoreDB.collection('userEmails').doc(email).get();
+    if(!ue.exists){toast(_t('error')+'User not found');return}
+    const{uid}=ue.data();
+    const trip=trips.find(t=>t.id===membersTripId);
+    if(!trip)return;
+    if(!trip.memberIds)trip.memberIds=[];
+    if(trip.memberIds.includes(uid)){toast(_t('error')+'Already a member');return}
+    trip.memberIds.push(uid);
+    saveTrips();
+    renderMembersList();toast(_t('memberAdded'))
+  }catch(e){toast(_t('error')+e.message)}
+}
+async function removeMember(uid){
+  if(!membersTripId)return;
+  const trip=trips.find(t=>t.id===membersTripId);
+  if(!trip)return;
+  trip.memberIds=(trip.memberIds||[]).filter(m=>m!==uid);
+  saveTrips();
+  renderMembersList();toast(_t('memberRemoved'))
+}
+async function leaveCollab(tripId){
+  if(!firebaseUser)return;
+  const trip=trips.find(t=>t.id===tripId);
+  if(!trip)return;
+  if(trip.ownerId===firebaseUser.uid){toast(_t('error')+'Owner cannot leave');return}
+  try{
+    await firestoreDB.collection('trips').doc(tripId).update({memberIds:firebase.firestore.FieldValue.arrayRemove(firebaseUser.uid)});
+    trip.memberIds=(trip.memberIds||[]).filter(m=>m!==firebaseUser.uid);
+    trips=trips.filter(t=>t.id!==tripId);
+    saveTrips();renderTrips();drawMap();toast(_t('collabLeft'))
+  }catch(e){toast(_t('error')+e.message)}
+}
 
 // ─── MAP FLY ─────────────────────────────────────────────────────────────────
-function flyTo(tripId,segId){const trip=trips.find(t=>t.id===tripId);if(!trip)return;const seg=(trip.segments||[]).find(s=>s.id===segId);if(!seg||!seg.fromLL||!seg.toLL)return;map.fitBounds(L.latLngBounds([seg.fromLL,seg.toLL]),{padding:[60,60]});const k='line_'+tripId+'_'+segId;if(mapLayers[k])mapLayers[k].openPopup()}
+function flyTo(tripId,segId){const trip=findScenario(tripId);if(!trip)return;const seg=(trip.segments||[]).find(s=>s.id===segId);if(!seg||!seg.fromLL||!seg.toLL)return;map.fitBounds(L.latLngBounds([seg.fromLL,seg.toLL]),{padding:[60,60]});const k='line_'+tripId+'_'+segId;if(mapLayers[k])mapLayers[k].openPopup()}
 
 // ─── IMPORT / EXPORT ─────────────────────────────────────────────────────────
 function exportData(){const data={trips,settings,exportedAt:new Date().toISOString()};const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(data,null,2)],{type:'application/json'}));a.download='routelog-'+new Date().toISOString().slice(0,10)+'.json';a.click();toast(_t('exportDone'))}
-function importData(e){const file=e.target.files[0];if(!file)return;const r=new FileReader();r.onload=ev=>{try{const d=JSON.parse(ev.target.result);if(d.trips){d.trips.forEach(t=>{if(!t.attractions)t.attractions=[]});trips=d.trips;saveTrips();goToTrips();drawMap();toast(_t('importDone',{n:trips.length}))}else if(d.routes){const trip={id:'trip_'+Date.now(),title:_t('importBtn')+' '+_t('tripOpen'),createdAt:new Date().toISOString(),segments:d.routes.map((x,i)=>({...x,order:i,id:x.id||'seg_'+Date.now()+'_'+i,passengers:x.passengers||1})),stays:[],attractions:[]};trips.push(trip);saveTrips();goToTrips();drawMap();toast(_t('importSegs',{n:d.routes.length}))}}catch{toast(_t('importNoFile'))}};r.readAsText(file);e.target.value=''}
+function importData(e){const file=e.target.files[0];if(!file)return;const r=new FileReader();r.onload=ev=>{try{const d=JSON.parse(ev.target.result);if(d.trips){d.trips.forEach(t=>{if(!t.scenarios){const sc={id:'sc_'+Date.now()+'_'+Math.random().toString(36).slice(2,6),title:t.title||_t('importBtn'),createdAt:new Date().toISOString(),visible:true,segments:t.segments||[],stays:t.stays||[],attractions:t.attractions||[]};t.scenarios=[sc];delete t.segments;delete t.stays;delete t.attractions}});trips=d.trips;saveTrips();goToTrips();drawMap();toast(_t('importDone',{n:trips.length}))}else if(d.routes){const trip={id:'trip_'+Date.now(),title:_t('importBtn')+' '+_t('tripOpen'),createdAt:new Date().toISOString(),visible:true,scenarios:[{id:'sc_'+Date.now(),title:_t('defaultScenario'),createdAt:new Date().toISOString(),visible:true,segments:d.routes.map((x,i)=>({...x,order:i,id:x.id||'seg_'+Date.now()+'_'+i,passengers:x.passengers||1})),stays:[],attractions:[]}]};trips.push(trip);saveTrips();goToTrips();drawMap();toast(_t('importSegs',{n:d.routes.length}))}}catch{toast(_t('importNoFile'))}};r.readAsText(file);e.target.value=''}
 
 // ─── CLEAR ALL ───────────────────────────────────────────────────────────────
 function confirmClearAll(){document.getElementById('deleteModalTitle').textContent=_t('clearAllTitle');document.getElementById('deleteModalMsg').textContent=_t('clearAllMsg');document.getElementById('deleteConfirmBtn').onclick=()=>{trips=[];saveTrips();cm('deleteModal');goToTrips();drawMap();toast(_t('clearAllDone'))};document.getElementById('deleteModal').classList.add('open')}
@@ -919,7 +1228,13 @@ function changeLang(){
   document.getElementById('mapStyleSelect').value=settings.mapStyle;
   document.getElementById('langSelect').value=settings.lang;
   document.getElementById('defaultCurrency').value=settings.defaultCurrency;
+  document.getElementById('headerLangSelect').value=settings.lang;
   translateUI();renderTrips();if(activeTripId)renderTripDetail();drawMap();
+}
+function headerChangeLang(val){
+  settings.lang=val;
+  document.getElementById('langSelect').value=val;
+  changeLang();
 }
 function translateUI(){
   document.title=_t('appSubtitle');
@@ -936,12 +1251,13 @@ function translateUI(){
   te('editStayModalTitle','editStay');te('editStayCancel','cancel');te('editStaySave','save');
   te('editAttrModalTitle','editAttr');te('editAttrCancel','cancel');te('editAttrSave','save');
   te('deleteCancel','cancel');te('deleteConfirmLabel','delete');
+  te('membersAddLabel');te('membersCancel');
 }
 
 // ─── INIT ─────────────────────────────────────────────────────────────────────
 window.addEventListener('DOMContentLoaded',async()=>{
   db=await openDB();await loadData();const m=migrateLegacyData();initMap();if(m)toast(_t('migrated'))
-  ;renderSettings();document.getElementById('defaultCurrency').value=settings.defaultCurrency;document.getElementById('mapStyleSelect').value=settings.mapStyle;document.getElementById('langSelect').value=settings.lang
+  ;renderSettings();document.getElementById('defaultCurrency').value=settings.defaultCurrency;document.getElementById('mapStyleSelect').value=settings.mapStyle;document.getElementById('langSelect').value=settings.lang;document.getElementById('headerLangSelect').value=settings.lang
   ;translateUI();renderTrips();drawMap()
   ;setTimeout(()=>map.invalidateSize(),200);window.addEventListener('resize',()=>map.invalidateSize())
 });

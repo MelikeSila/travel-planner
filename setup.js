@@ -16,5 +16,13 @@ const config = {
   messagingSenderId: process.env.FIREBASE_MESSAGING_SENDER_ID,
   appId: process.env.FIREBASE_APP_ID
 };
-fs.writeFileSync('config.js', `const FIREBASE_CONFIG = ${JSON.stringify(config, null, 2)};\n`);
-console.log('config.js written successfully ✓');
+const emailjs = {
+  publicKey: process.env.EMAILJS_PUBLIC_KEY || "YOUR_EMAILJS_PUBLIC_KEY",
+  serviceId: process.env.EMAILJS_SERVICE_ID || "YOUR_EMAILJS_SERVICE_ID",
+  templateId: process.env.EMAILJS_TEMPLATE_ID || "YOUR_EMAILJS_TEMPLATE_ID"
+};
+fs.writeFileSync('config.js', `const FIREBASE_CONFIG = ${JSON.stringify(config, null, 2)};\n\nconst EMAILJS_CONFIG = ${JSON.stringify(emailjs, null, 2)};\n`);
+const sh=Object.entries(config).map(([k,v])=>`export FIREBASE_${k.replace(/([A-Z])/g,'_$1').toUpperCase()}="${v}"`).join('\n');
+fs.writeFileSync('config.sh', sh+'\n');
+console.log('config.js + config.sh written successfully ✓');
+console.log('Set EMAILJS_PUBLIC_KEY, EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID env vars for EmailJS support.');
