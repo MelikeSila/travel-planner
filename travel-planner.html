@@ -400,7 +400,7 @@ const LANG = {
     shareModalTitle:'Senaryoyu Paylaş',shareTripModalTitle:'Seyahati Paylaş',shareEmailLabel:"Kişinin E-posta Adresi",shareAccessLabel:'Erişim Seviyesi',
     shareAccessRead:'Sadece Oku',shareAccessWrite:'Oku ve Yaz',shareConfirm:'Paylaş',
     myCollaborations:'Ortak Çalışma Yaptıklarım',shareDeleted:'Paylaşım kaldırıldı',memberAdded:'Üye eklendi ✓',memberRemoved:'Üye çıkarıldı ✓',manageMembers:'Üyeleri Yönet',memberEmail:'E-posta Adresi',membersAddLabel:'E-posta ile üye ekle',membersCancel:'Kapat',leaveCollab:'Ayrıl',collabLeft:'Çalışmadan ayrıldın ✓',
-    sharedDone:'Paylaşıldı ✓',loginRequired:'Önce giriş yapın',validEmail:'Geçerli bir e-posta girin',
+    sharedDone:'Paylaşıldı ✓',shareNoEmail:'E-posta gönderilemedi ama seyahat paylaşıldı',loginRequired:'Önce giriş yapın',validEmail:'Geçerli bir e-posta girin',
     imported:'içe aktarıldı',importedDone:'Seyahate eklendi ✓',sharedTrip:'Paylaşılan Seyahat',
     access:'Erişim',shareCancel:'İptal',
     emailTrip:'seyahat',emailScenario:'senaryo',emailSubject:'{sender} seninle bir {type} paylaştı — RouteLog',emailBody:'{sender} seninle "{item}" isimli {type} paylaştı.',emailBtn:'📥 RouteLog\'da Aç',emailFooter:'RouteLog · Seyahat Planlayıcı',emailAccessRead:'Sadece Oku',emailAccessWrite:'Oku ve Yaz',
@@ -463,7 +463,7 @@ const LANG = {
     shareModalTitle:'Share Scenario',shareTripModalTitle:'Share Trip',shareEmailLabel:"Recipient's Email",shareAccessLabel:'Access Level',
     shareAccessRead:'Read Only',shareAccessWrite:'Read & Write',shareConfirm:'Share',
     myCollaborations:'My Collaborations',shareDeleted:'Share removed',memberAdded:'Member added ✓',memberRemoved:'Member removed ✓',manageMembers:'Manage Members',memberEmail:'Email Address',membersAddLabel:'Add member by email',membersCancel:'Close',leaveCollab:'Leave',collabLeft:'Left collaboration ✓',
-    sharedDone:'Shared ✓',loginRequired:'Login first',validEmail:'Enter a valid email',
+    sharedDone:'Shared ✓',shareNoEmail:'Email could not be delivered, but trip is shared',loginRequired:'Login first',validEmail:'Enter a valid email',
     imported:'imported',importedDone:'Added to trips ✓',sharedTrip:'Shared Trip',
     access:'Access',shareCancel:'Cancel',
     emailTrip:'trip',emailScenario:'scenario',emailSubject:'{sender} shared a {type} with you — RouteLog',emailBody:'{sender} shared the {type} "{item}" with you.',emailBtn:'📥 Open in RouteLog',emailFooter:'RouteLog · Trip Planner',emailAccessRead:'Read Only',emailAccessWrite:'Read & Write',
@@ -525,7 +525,7 @@ const LANG = {
     shareModalTitle:'Szenario teilen',shareTripModalTitle:'Reise teilen',shareEmailLabel:"E-Mail des Empfängers",shareAccessLabel:'Zugriffsstufe',
     shareAccessRead:'Nur Lesen',shareAccessWrite:'Lesen und Schreiben',shareConfirm:'Teilen',
     myCollaborations:'Meine Mitarbeiten',shareDeleted:'Freigabe entfernt',memberAdded:'Mitglied hinzugefügt ✓',memberRemoved:'Mitglied entfernt ✓',manageMembers:'Mitglieder verwalten',memberEmail:'E-Mail-Adresse',membersAddLabel:'Mitglied per E-Mail hinzufügen',membersCancel:'Schließen',leaveCollab:'Verlassen',collabLeft:'Mitarbeit verlassen ✓',
-    sharedDone:'Geteilt ✓',loginRequired:'Zuerst anmelden',validEmail:'Gültige E-Mail eingeben',
+    sharedDone:'Geteilt ✓',shareNoEmail:'E-Mail konnte nicht zugestellt werden, aber Reise geteilt',loginRequired:'Zuerst anmelden',validEmail:'Gültige E-Mail eingeben',
     imported:'importiert',importedDone:'Zu Reisen hinzugefügt ✓',sharedTrip:'Geteilte Reise',
     access:'Zugriff',shareCancel:'Abbrechen',
     emailTrip:'Reise',emailScenario:'Szenario',emailSubject:'{sender} hat ein {type} mit dir geteilt — RouteLog',emailBody:'{sender} hat das {type} "{item}" mit dir geteilt.',emailBtn:'📥 In RouteLog öffnen',emailFooter:'RouteLog · Reiseplaner',emailAccessRead:'Nur Lesen',emailAccessWrite:'Lesen und Schreiben',
@@ -1121,10 +1121,9 @@ async function confirmShare(){const email=document.getElementById('shareEmailInp
   if(trip.ownerId!==firebaseUser.uid){toast(_t('error')+'Only the owner can share');return}
   if(!trip.memberIds)trip.memberIds=[];
   if(trip.memberIds.includes(uid)){toast(_t('error')+'Already a member');return}
-  if(typeof EMAILJS_CONFIG!=='undefined'&&EMAILJS_CONFIG.publicKey&&EMAILJS_CONFIG.publicKey!=='YOUR_EMAILJS_PUBLIC_KEY'){try{emailjs.init(EMAILJS_CONFIG.publicKey);await emailjs.send(EMAILJS_CONFIG.serviceId,EMAILJS_CONFIG.templateId,{to_email:email,subject:_t('emailSubject',{sender:trip.ownerDisplayName||firebaseUser.email,type:_t('emailTrip')}),body_html:'<div style="font-family:-apple-system,BlinkMacSystemFont,\'Segoe UI\',Roboto,sans-serif;max-width:480px;margin:0 auto;padding:32px 24px"><div style="font-size:24px;font-weight:700;letter-spacing:-.03em;margin-bottom:4px">✈ RouteLog</div><div style="font-size:13px;color:#6b6760;margin-bottom:24px">'+_t('appSubtitle')+'</div><div style="border:1px solid #e2ddd5;border-radius:10px;padding:24px"><p style="margin:0 0 16px;font-size:15px;line-height:1.5;color:#1a1916">'+_t('emailBody',{sender:trip.ownerDisplayName||firebaseUser.email,type:_t('emailTrip'),item:trip.title})+'</p><a href="https://travel-planner.cankaya.tech" style="display:inline-block;padding:10px 24px;background:#1a1916;color:#fff;text-decoration:none;border-radius:6px;font-size:14px;font-weight:500">'+_t('emailBtn')+'</a></div><div style="margin-top:16px;font-size:11px;color:#9e9a93">'+_t('emailFooter')+'</div></div>'});console.log('email sent')}catch(e){console.error('email send error',e);toast(_t('error')+'Email failed: '+e.message);return}}
   trip.memberIds.push(uid);
   saveTrips();
-  cm('shareModal');shareTargetId=null;toast(_t('sharedDone'));
+  if(typeof EMAILJS_CONFIG!=='undefined'&&EMAILJS_CONFIG.publicKey&&EMAILJS_CONFIG.publicKey!=='YOUR_EMAILJS_PUBLIC_KEY'){try{emailjs.init(EMAILJS_CONFIG.publicKey);await emailjs.send(EMAILJS_CONFIG.serviceId,EMAILJS_CONFIG.templateId,{to_email:email,subject:_t('emailSubject',{sender:trip.ownerDisplayName||firebaseUser.email,type:_t('emailTrip')}),body_html:'<div style="font-family:-apple-system,BlinkMacSystemFont,\'Segoe UI\',Roboto,sans-serif;max-width:480px;margin:0 auto;padding:32px 24px"><div style="font-size:24px;font-weight:700;letter-spacing:-.03em;margin-bottom:4px">✈ RouteLog</div><div style="font-size:13px;color:#6b6760;margin-bottom:24px">'+_t('appSubtitle')+'</div><div style="border:1px solid #e2ddd5;border-radius:10px;padding:24px"><p style="margin:0 0 16px;font-size:15px;line-height:1.5;color:#1a1916">'+_t('emailBody',{sender:trip.ownerDisplayName||firebaseUser.email,type:_t('emailTrip'),item:trip.title})+'</p><a href="https://travel-planner.cankaya.tech" style="display:inline-block;padding:10px 24px;background:#1a1916;color:#fff;text-decoration:none;border-radius:6px;font-size:14px;font-weight:500">'+_t('emailBtn')+'</a></div><div style="margin-top:16px;font-size:11px;color:#9e9a93">'+_t('emailFooter')+'</div></div>'});cm('shareModal');shareTargetId=null;toast(_t('sharedDone'));console.log('email sent')}catch(e){console.error('email send error',e);cm('shareModal');shareTargetId=null;toast(_t('shareNoEmail'))}}else{cm('shareModal');shareTargetId=null;toast(_t('sharedDone'))}
 }catch(e){toast(_t('error')+e.message)}}
 
 // Member management
