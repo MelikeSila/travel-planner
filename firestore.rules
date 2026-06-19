@@ -8,7 +8,8 @@ service cloud.firestore {
       allow create: if request.auth != null;
       allow read, write: if request.auth != null && (
         request.auth.uid == resource.data.ownerId ||
-        request.auth.uid in resource.data.memberIds
+        request.auth.uid in resource.data.memberIds ||
+        request.auth.token.email in resource.data.memberEmails
       );
     }
     match /userEmails/{email} {
