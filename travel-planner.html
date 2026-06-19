@@ -594,7 +594,7 @@ function onFirebaseAuth(user){
   const loginBtn=document.getElementById('loginBtn');
   const userArea=document.getElementById('userArea');
   if(user){
-    firestoreDB.collection('userEmails').doc(user.email).set({uid:user.uid,displayName:user.displayName||user.email}).catch(()=>{});
+    firestoreDB.collection('userEmails').doc(user.email.toLowerCase()).set({uid:user.uid,displayName:user.displayName||user.email}).catch(()=>{});
     loginBtn.style.display='none';
     userArea.style.display='flex';
     document.getElementById('userAvatar').src=user.photoURL||'';
@@ -1114,7 +1114,7 @@ function pasteScenario(parentId){if(!clipboard||clipboard.type!=='scenario'){toa
 let shareTargetId=null;
 function shareScenario(scId){if(!firebaseUser){toast(_t('loginRequired'));return}const sc=findScenario(scId);if(!sc)return;shareTargetId=scId;document.getElementById('shareEmailInput').value='';document.getElementById('shareModalTitle').textContent=_t('shareModalTitle');document.getElementById('shareEmailLabel').textContent=_t('shareEmailLabel');document.getElementById('shareCancel').textContent=_t('shareCancel');document.getElementById('shareConfirm').textContent=_t('shareConfirm');document.getElementById('shareModal').classList.add('open');setTimeout(()=>document.getElementById('shareEmailInput').focus(),100)}
 function shareTrip(tripId){if(!firebaseUser){toast(_t('loginRequired'));return}const t=trips.find(t=>t.id===tripId);if(!t)return;shareTargetId=tripId;document.getElementById('shareEmailInput').value='';document.getElementById('shareModalTitle').textContent=_t('shareTripModalTitle');document.getElementById('shareEmailLabel').textContent=_t('shareEmailLabel');document.getElementById('shareCancel').textContent=_t('shareCancel');document.getElementById('shareConfirm').textContent=_t('shareConfirm');document.getElementById('shareModal').classList.add('open');setTimeout(()=>document.getElementById('shareEmailInput').focus(),100)}
-async function confirmShare(){const email=document.getElementById('shareEmailInput').value.trim();if(!email||!email.includes('@')){toast(_t('validEmail'));return}if(!firebaseUser||!shareTargetId)return;try{
+async function confirmShare(){const email=document.getElementById('shareEmailInput').value.trim().toLowerCase();if(!email||!email.includes('@')){toast(_t('validEmail'));return}if(!firebaseUser||!shareTargetId)return;try{
   const trip=trips.find(t=>t.id===shareTargetId);
   if(!trip)return;
   if(trip.ownerId!==firebaseUser.uid){toast(_t('error')+'Only the owner can share');return}
@@ -1163,7 +1163,7 @@ function renderMembersList(){
   }).join('');
 }
 async function confirmAddMember(){
-  const email=document.getElementById('memberEmailInput').value.trim();
+  const email=document.getElementById('memberEmailInput').value.trim().toLowerCase();
   if(!email||!email.includes('@')){toast(_t('validEmail'));return}
   if(!firebaseUser||!membersTripId)return;
   try{
