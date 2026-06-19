@@ -697,7 +697,7 @@ function setupTripsListener(){
 
   const unsub1=firestoreDB.collection('trips').where('ownerId','==',firebaseUser.uid).onSnapshot(snap=>{_ownedTripCache=[];snap.forEach(d=>{const t=d.data();t.id=d.id;_ownedTripCache.push(t)});mergeTrips()},e=>console.error('owned snap err',e));
   const unsub2=firestoreDB.collection('trips').where('memberIds','array-contains',firebaseUser.uid).onSnapshot(snap=>{_collabTripCache=[];snap.forEach(d=>{const t=d.data();t.id=d.id;_collabTripCache.push(t)});mergeTrips()},e=>console.error('collab snap err',e));
-  const unsub3=firestoreDB.collection('trips').where('memberEmails','array-contains',firebaseUser.email).onSnapshot(snap=>{snap.forEach(d=>{const t=d.data(),id=d.id;const local=trips.find(x=>x.id===id);if(local&&!local.memberIds.includes(firebaseUser.uid)){firestoreDB.collection('trips').doc(id).update({memberIds:firebase.firestore.FieldValue.arrayUnion(firebaseUser.uid),memberEmails:firebase.firestore.FieldValue.arrayRemove(firebaseUser.email)});if(!local.memberIds)local.memberIds=[];local.memberIds.push(firebaseUser.uid);if(local.memberEmails)local.memberEmails=local.memberEmails.filter(e=>e!==firebaseUser.email)}})},e=>console.error('invite snap err',e));
+  const unsub3=firestoreDB.collection('trips').where('memberEmails','array-contains',firebaseUser.email).onSnapshot(snap=>{if(snap.empty)return;_collabTripCache=[];snap.forEach(d=>{const t=d.data(),id=d.id;const local=trips.find(x=>x.id===id);if(!local||!local.memberIds.includes(firebaseUser.uid)){firestoreDB.collection('trips').doc(id).update({memberIds:firebase.firestore.FieldValue.arrayUnion(firebaseUser.uid),memberEmails:firebase.firestore.FieldValue.arrayRemove(firebaseUser.email)});if(local){if(!local.memberIds)local.memberIds=[];local.memberIds.push(firebaseUser.uid);if(local.memberEmails)local.memberEmails=local.memberEmails.filter(e=>e!==firebaseUser.email)}}const c={...t};if(!c.memberIds)c.memberIds=[];if(!c.memberIds.includes(firebaseUser.uid))c.memberIds.push(firebaseUser.uid);c.id=id;_collabTripCache.push(c)});mergeTrips()},e=>console.error('invite snap err',e));
 
   tripsUnsub=()=>{unsub1();unsub2();unsub3();_ownedTripCache=[];_collabTripCache=[]};
 }
@@ -1132,11 +1132,11 @@ async function claimInvites(){
     const snap=await firestoreDB.collection('trips').where('memberEmails','array-contains',firebaseUser.email).get();
     if(snap.empty)return;
     for(const doc of snap.docs){
-      const ref=firestoreDB.collection('trips').doc(doc.id);
-      await ref.update({memberIds:firebase.firestore.FieldValue.arrayUnion(firebaseUser.uid),memberEmails:firebase.firestore.FieldValue.arrayRemove(firebaseUser.email)});
-      const t=trips.find(t=>t.id===doc.id);
-      if(t){if(!t.memberIds)t.memberIds=[];if(!t.memberIds.includes(firebaseUser.uid))t.memberIds.push(firebaseUser.uid);if(t.memberEmails)t.memberEmails=t.memberEmails.filter(e=>e!==firebaseUser.email)}
+      await firestoreDB.collection('trips').doc(doc.id).update({memberIds:firebase.firestore.FieldValue.arrayUnion(firebaseUser.uid),memberEmails:firebase.firestore.FieldValue.arrayRemove(firebaseUser.email)});
     }
+    const qSnap=await firestoreDB.collection('trips').where('memberIds','array-contains',firebaseUser.uid).get();
+    qSnap.forEach(d=>{const t=d.data();t.id=d.id;if(!trips.find(x=>x.id===t.id))trips.push(t)});
+    saveTrips();renderTrips();if(activeTripId)renderTripDetail();drawMap();
   }catch(e){console.error('claim invites error',e)}
 }
 
