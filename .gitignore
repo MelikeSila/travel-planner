@@ -1,3 +1,6 @@
 .firebase/
 *.local
 config.js
+.DS_Store
+.idea/
+config.sh
