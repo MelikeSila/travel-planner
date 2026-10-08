@@ -16,3 +16,7 @@ const EMAILJS_CONFIG = {
   serviceId: "YOUR_EMAILJS_SERVICE_ID",
   templateId: "YOUR_EMAILJS_TEMPLATE_ID"
 };
+
+// CARTO basemaps API key (free, no account): https://carto.com/basemaps/apikey
+// Needed for the light/dark map styles. If empty, Esri basemaps are used instead.
+const CARTO_API_KEY = "YOUR_CARTO_API_KEY";

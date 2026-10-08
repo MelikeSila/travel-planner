@@ -67,6 +67,25 @@ textarea{resize:vertical;min-height:56px}
 .tc-left{display:flex;align-items:center;gap:10px;flex:1;min-width:0}
 .tc-icon{width:36px;height:36px;border-radius:var(--radius-sm);background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
 .map-toggle{width:16px;height:16px;cursor:pointer;accent-color:var(--accent);flex-shrink:0}
+.leaflet-bottom.leaflet-right{display:flex;flex-direction:column;align-items:flex-end}
+.leaflet-bottom.leaflet-right .map-style-ctrl{order:0}
+.leaflet-bottom.leaflet-right .leaflet-control-attribution{order:1}
+.map-style-ctrl{position:relative}
+.map-ctrl-row{display:flex;gap:6px;align-items:center}
+.map-src{display:flex;height:38px;background:var(--surface);border:1px solid var(--border);border-radius:8px;box-shadow:var(--shadow);overflow:hidden}
+.map-src button{border:none;background:transparent;font-family:inherit;font-size:11px;font-weight:700;letter-spacing:.02em;color:var(--text3);padding:0 11px;cursor:pointer;transition:.12s}
+.map-src button+button{border-left:1px solid var(--border)}
+.map-src button:hover{background:var(--surface2);color:var(--text)}
+.map-src button.active{background:var(--accent);border-left-color:var(--accent);color:#fff}
+.map-style-btn{width:38px;height:38px;border-radius:8px;background:var(--surface);border:1px solid var(--border);box-shadow:var(--shadow);cursor:pointer;font-size:17px;line-height:1;display:flex;align-items:center;justify-content:center;padding:0;transition:.12s}
+.map-style-btn:hover{background:var(--surface2);border-color:var(--border2)}
+.map-style-panel{position:absolute;bottom:calc(100% + 8px);right:0;display:none;background:var(--surface);border:1px solid var(--border);border-radius:10px;box-shadow:var(--shadow-lg);padding:6px;min-width:160px;z-index:1001}
+.map-style-panel.open{display:block}
+.ms-item{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;border:none;background:transparent;font-family:inherit;font-size:13px;color:var(--text);padding:8px 10px;border-radius:6px;cursor:pointer;text-align:left}
+.ms-item:hover{background:var(--surface2)}
+.ms-item .ms-check{opacity:0;color:var(--accent);font-weight:700}
+.ms-item.active{background:var(--accent-light);color:var(--accent);font-weight:600}
+.ms-item.active .ms-check{opacity:1}
 .tc-name{font-size:14px;font-weight:600;letter-spacing:-.01em}
 .tc-meta{font-size:11px;color:var(--text3);margin-top:1px}
 .tc-total{font-size:16px;font-weight:600;font-family:'DM Mono',monospace;letter-spacing:-.02em;text-align:right;flex-shrink:0}
@@ -310,7 +329,7 @@ textarea{resize:vertical;min-height:56px}
 <script>
 // ─── STATE ───────────────────────────────────────────────────────────────────
 let trips = [];let clipboard = null;let dragIdx = null;let dragScIdx = null;let dragParentIdx = null;let labelMode = 'hover';
-let settings = { defaultCurrency: '€', mapStyle: 'light', lang: 'tr' };
+let settings = { defaultCurrency: '€', mapStyle: 'light', lang: 'tr', useCarto: true };
 let activeTripId = null;
 let expandedTripId = null;
 let editingTripId = null;
@@ -371,10 +390,11 @@ const LANG = {
     deleteAttrConfirm:'"{n}" mekanı silinecek.',
     clearAllTitle:'Tüm verileri sil?',clearAllMsg:'Tüm seyahatler, segmentler, konaklamalar ve mekanlar silinecek.',
     clearAllDone:'Tüm veriler silindi',
-    mapStyle:'Harita Stili',defaultCurrency:'Varsayılan Para Birimi',language:'Dil',
+    mapStyle:'Harita Stili',mapSrc:'Harita kaynağı',defaultCurrency:'Varsayılan Para Birimi',language:'Dil',
     dataManagement:'Veri Yönetimi',exportJson:'JSON Olarak Dışa Aktar',importJson:"JSON'dan İçe Aktar",
     dataInfo:'Verileriniz tarayıcınızda saklanır.\\nDışa aktararak yedek alabilir, başka cihaza aktarabilirsiniz.',
     light:'Açık',dark:'Koyu',streets:'Sokaklar',satellite:'Uydu',
+    cartoOn:'CARTO haritası açıldı ✓',cartoOff:'Esri haritasına geçildi ✓',
     searchingCoords:'Koordinatlar aranıyor...',coordsUpdated:'Koordinatlar güncellendi ✓',coordsNotFound:'Koordinat bulunamadı. Şehir adını kontrol edin.',
     tripCreated:'Seyahat oluşturuldu ✓',tripUpdated:'Seyahat adı güncellendi',tripDeleted:'Seyahat silindi',
     segmentAdded:'Segment eklendi ✓',segmentUpdated:'Segment güncellendi ✓',segmentDeleted:'Segment silindi',
@@ -434,10 +454,11 @@ const LANG = {
     deleteAttrConfirm:'"{n}" will be deleted.',
     clearAllTitle:'Delete all data?',clearAllMsg:'All trips, segments, stays, places will be deleted.',
     clearAllDone:'All data deleted',
-    mapStyle:'Map Style',defaultCurrency:'Default Currency',language:'Language',
+    mapStyle:'Map Style',mapSrc:'Map source',defaultCurrency:'Default Currency',language:'Language',
     dataManagement:'Data Management',exportJson:'Export as JSON',importJson:'Import from JSON',
     dataInfo:'Data stored in your browser.\\nExport to backup or transfer to another device.',
     light:'Light',dark:'Dark',streets:'Streets',satellite:'Satellite',
+    cartoOn:'CARTO map on ✓',cartoOff:'Switched to Esri basemap ✓',
     searchingCoords:'Searching coords...',coordsUpdated:'Coords updated ✓',coordsNotFound:'Coords not found. Check city name.',
     tripCreated:'Trip created ✓',tripUpdated:'Trip name updated',tripDeleted:'Trip deleted',
     segmentAdded:'Segment added ✓',segmentUpdated:'Segment updated ✓',segmentDeleted:'Segment deleted',
@@ -496,10 +517,11 @@ const LANG = {
     deleteAttrConfirm:'"{n}" wird gelöscht.',
     clearAllTitle:'Alle Daten löschen?',clearAllMsg:'Alle Reisen, Segmente, Unterkünfte, Orte werden gelöscht.',
     clearAllDone:'Alle Daten gelöscht',
-    mapStyle:'Kartenstil',defaultCurrency:'Standardwährung',language:'Sprache',
+    mapStyle:'Kartenstil',mapSrc:'Kartenanbieter',defaultCurrency:'Standardwährung',language:'Sprache',
     dataManagement:'Datenverwaltung',exportJson:'Als JSON exportieren',importJson:'Von JSON importieren',
     dataInfo:'Daten im Browser gespeichert.\\nExportieren als Backup oder auf anderes Gerät.',
     light:'Hell',dark:'Dunkel',streets:'Straßen',satellite:'Satellit',
+    cartoOn:'CARTO-Karte aktiv ✓',cartoOff:'Zur Esri-Karte gewechselt ✓',
     searchingCoords:'Suche Koordinaten...',coordsUpdated:'Koordinaten aktualisiert ✓',coordsNotFound:'Koord. nicht gefunden. Stadt prüfen.',
     tripCreated:'Reise erstellt ✓',tripUpdated:'Reisename aktualisiert',tripDeleted:'Reise gelöscht',
     segmentAdded:'Segment hinzugefügt ✓',segmentUpdated:'Segment aktualisiert ✓',segmentDeleted:'Segment gelöscht',
@@ -541,12 +563,50 @@ const _t = (k, p) => {
   return Object.entries(p).reduce((r,[key,v])=>r.replace(new RegExp('\\{'+key+'\\}','g'),v), s);
 };
 
-const TILES = {
-  light:'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
-  dark:'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+const CARTO_KEY = (typeof CARTO_API_KEY!=='undefined' && CARTO_API_KEY && CARTO_API_KEY!=='YOUR_CARTO_API_KEY') ? CARTO_API_KEY : '';
+function cartoTile(style){ return 'https://{s}.basemaps.cartocdn.com/'+style+'/{z}/{x}/{y}{r}.png?key='+encodeURIComponent(CARTO_KEY) }
+const BASE_TILES = {
+  light:'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}',
+  dark:'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}',
   streets:'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
   satellite:'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
 };
+function cartoOn(){ return !!CARTO_KEY && settings.useCarto!==false }
+function tileUrl(){
+  const s=settings.mapStyle;
+  if(cartoOn()&&(s==='light'||s==='dark')) return cartoTile(s==='light'?'light_all':'dark_all');
+  return BASE_TILES[s]||BASE_TILES.light;
+}
+function tileAttrib(){
+  const s=settings.mapStyle;
+  if(cartoOn()&&(s==='light'||s==='dark')) return '© OpenStreetMap contributors, © CARTO';
+  return s==='streets'?'© OpenStreetMap contributors':(s==='satellite'?'Imagery © Esri':'Basemap © Esri');
+}
+function refreshTiles(){ if(!map)return; if(tileLayer)map.removeLayer(tileLayer); tileLayer=L.tileLayer(tileUrl(),{attribution:tileAttrib(),maxZoom:19}).addTo(map); updateMapControls() }
+const MAP_STYLES=['light','dark','streets','satellite'];
+function mapStylePanelHtml(){
+  let h='<div class="map-style-panel" id="mapStylePanel">';
+  MAP_STYLES.forEach(s=>{h+='<button type="button" class="ms-item" data-style="'+s+'"><span>'+_t(s)+'</span><span class="ms-check">✓</span></button>'});
+  h+='</div><div class="map-ctrl-row">';
+  if(CARTO_KEY) h+='<div class="map-src" role="group" aria-label="'+esc(_t('mapSrc'))+'"><button type="button" data-src="carto" title="CARTO">CARTO</button><button type="button" data-src="esri" title="Esri">Esri</button></div>';
+  h+='<button type="button" class="map-style-btn" id="mapStyleBtn" title="'+esc(_t('mapStyle'))+'">🗺️</button></div>';
+  return h;
+}
+function wireMapStyleCtrl(d){
+  const btn=d.querySelector('#mapStyleBtn');
+  if(btn)btn.onclick=e=>{e.stopPropagation();const p=document.getElementById('mapStylePanel');if(p)p.classList.toggle('open')};
+  d.querySelectorAll('.ms-item').forEach(b=>{b.onclick=()=>{setMapStyle(b.getAttribute('data-style'));closeMapStylePanel()}});
+  const src=d.querySelector('.map-src');
+  if(src)src.querySelectorAll('button').forEach(b=>{b.onclick=e=>{e.stopPropagation();setBasemap(b.getAttribute('data-src'))}});
+}
+function rebuildMapStylePanel(){const c=document.querySelector('.map-style-ctrl');if(!c)return;c.innerHTML=mapStylePanelHtml();wireMapStyleCtrl(c);updateMapControls()}
+function closeMapStylePanel(){const p=document.getElementById('mapStylePanel');if(p)p.classList.remove('open')}
+function updateMapControls(){
+  const panel=document.getElementById('mapStylePanel');
+  if(panel)panel.querySelectorAll('.ms-item').forEach(b=>b.classList.toggle('active',b.getAttribute('data-style')===settings.mapStyle));
+  const src=document.querySelector('.map-style-ctrl .map-src');
+  if(src){const on=cartoOn();src.querySelectorAll('button').forEach(b=>b.classList.toggle('active',(b.getAttribute('data-src')==='carto')===on))}
+}
 
 // ─── HELPERS ─────────────────────────────────────────────────────────────────
 function esc(s){if(!s)return '';return s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39'})[c]||c)}
@@ -773,7 +833,6 @@ async function retryStayGeocode(tripId,stayId){
 // ─── MAP ─────────────────────────────────────────────────────────────────────
 function initMap(){
   map=L.map('map',{zoomControl:true}).setView([48,14],4);
-  tileLayer=L.tileLayer(TILES[settings.mapStyle],{attribution:'© OpenStreetMap / CartoDB',maxZoom:19}).addTo(map);
   map.on('zoomend',()=>{if(labelMode==='zoom')updateLabelVisibility()});
   const ctrl=L.control({position:'bottomleft'});
   ctrl.onAdd=()=>{
@@ -782,8 +841,19 @@ function initMap(){
     d.onclick=()=>{labelMode=labelMode==='hover'?'zoom':'hover';document.getElementById('labelModeText').textContent=labelMode==='zoom'?_t('labelModeZoom'):_t('labelModeHover');drawMap();toast(labelMode==='zoom'?_t('labelToastZoom'):_t('labelToastHover'))};
     return d
   };ctrl.addTo(map);
+  const sc=L.control({position:'bottomright'});
+  sc.onAdd=()=>{
+    const d=document.createElement('div');
+    d.className='map-style-ctrl';
+    d.innerHTML=mapStylePanelHtml();
+    wireMapStyleCtrl(d);
+    return d
+  };sc.addTo(map);
+  map.on('click',closeMapStylePanel);
+  refreshTiles();
 }
-function changeMapStyle(){settings.mapStyle=document.getElementById('mapStyleSelect').value;saveSettings();if(tileLayer)map.removeLayer(tileLayer);tileLayer=L.tileLayer(TILES[settings.mapStyle],{attribution:'© OpenStreetMap / CartoDB',maxZoom:19}).addTo(map)}
+function setMapStyle(s){ if(!BASE_TILES[s]||s===settings.mapStyle)return; settings.mapStyle=s; saveSettings(); refreshTiles() }
+function setBasemap(src){const on=src==='carto';if(on&&!CARTO_KEY)return;if(on===cartoOn())return;settings.useCarto=on;saveSettings();refreshTiles();toast(on?_t('cartoOn'):_t('cartoOff'))}
 async function geocode(city){let c=await dbGet('geocache');if(!c)c={};if(c[city])return c[city];try{const r=await fetch('https://nominatim.openstreetmap.org/search?q='+encodeURIComponent(city)+'&format=json&limit=1');const d=await r.json();if(d&&d[0]){const ll=[parseFloat(d[0].lat),parseFloat(d[0].lon)];c[city]=ll;dbPut('geocache',c);return ll}}catch{}return null}
 function drawMap(){
   try{map.invalidateSize()}catch{}
@@ -1216,13 +1286,6 @@ function confirmClearAll(){document.getElementById('deleteModalTitle').textConte
 // ─── SETTINGS UI ──────────────────────────────────────────────────────────────
 function renderSettings(){
   document.getElementById('settingsContent').innerHTML=
-    '<div class="form-group"><div class="section-title">'+_t('mapStyle')+'</div>'+
-    '<select id="mapStyleSelect" onchange="changeMapStyle()">'+
-    '<option value="light">'+_t('light')+'</option>'+
-    '<option value="dark">'+_t('dark')+'</option>'+
-    '<option value="streets">'+_t('streets')+'</option>'+
-    '<option value="satellite">'+_t('satellite')+'</option>'+
-    '</select></div>'+
     '<div class="form-group"><div class="section-title">'+_t('defaultCurrency')+'</div>'+
     '<select id="defaultCurrency" onchange="saveSettings()">'+
     '<option value="€">€ EUR</option><option value="₺">₺ TRY</option><option value="$">$ USD</option><option value="£">£ GBP</option>'+
@@ -1241,7 +1304,7 @@ function renderSettings(){
 function changeLang(){
   settings.lang=document.getElementById('langSelect').value;
   saveSettings();renderSettings();
-  document.getElementById('mapStyleSelect').value=settings.mapStyle;
+  rebuildMapStylePanel();
   document.getElementById('langSelect').value=settings.lang;
   document.getElementById('defaultCurrency').value=settings.defaultCurrency;
   document.getElementById('headerLangSelect').value=settings.lang;
@@ -1273,7 +1336,7 @@ function translateUI(){
 // ─── INIT ─────────────────────────────────────────────────────────────────────
 window.addEventListener('DOMContentLoaded',async()=>{
   db=await openDB();await loadData();const m=migrateLegacyData();initMap();if(m)toast(_t('migrated'))
-  ;renderSettings();document.getElementById('defaultCurrency').value=settings.defaultCurrency;document.getElementById('mapStyleSelect').value=settings.mapStyle;document.getElementById('langSelect').value=settings.lang;document.getElementById('headerLangSelect').value=settings.lang
+  ;renderSettings();document.getElementById('defaultCurrency').value=settings.defaultCurrency;document.getElementById('langSelect').value=settings.lang;document.getElementById('headerLangSelect').value=settings.lang
   ;translateUI();renderTrips();drawMap()
   ;setTimeout(()=>map.invalidateSize(),200);window.addEventListener('resize',()=>map.invalidateSize())
 });

@@ -21,8 +21,10 @@ const emailjs = {
   serviceId: process.env.EMAILJS_SERVICE_ID || "YOUR_EMAILJS_SERVICE_ID",
   templateId: process.env.EMAILJS_TEMPLATE_ID || "YOUR_EMAILJS_TEMPLATE_ID"
 };
-fs.writeFileSync('config.js', `const FIREBASE_CONFIG = ${JSON.stringify(config, null, 2)};\n\nconst EMAILJS_CONFIG = ${JSON.stringify(emailjs, null, 2)};\n`);
+const cartoKey = process.env.CARTO_API_KEY || "";
+fs.writeFileSync('config.js', `const FIREBASE_CONFIG = ${JSON.stringify(config, null, 2)};\n\nconst EMAILJS_CONFIG = ${JSON.stringify(emailjs, null, 2)};\n\n// https://carto.com/basemaps/apikey (free, no account needed)\n// Empty = CARTO tiles are skipped (watermark), falls back to Esri basemaps\nconst CARTO_API_KEY = ${JSON.stringify(cartoKey)};\n`);
 const sh=Object.entries(config).map(([k,v])=>`export FIREBASE_${k.replace(/([A-Z])/g,'_$1').toUpperCase()}="${v}"`).join('\n');
 fs.writeFileSync('config.sh', sh+'\n');
 console.log('config.js + config.sh written successfully ✓');
 console.log('Set EMAILJS_PUBLIC_KEY, EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID env vars for EmailJS support.');
+console.log('Set CARTO_API_KEY env var (https://carto.com/basemaps/apikey) to remove the map watermark.');

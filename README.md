@@ -75,6 +75,18 @@ python3 -m http.server 8000
 # or open travel-planner.html directly
 ```
 
+### Map tiles
+
+CARTO (the `light` / `dark` styles) requires a free API key — without it CARTO tiles show a repeated "API key required" watermark.
+
+1. Request a key at https://carto.com/basemaps/apikey (free, no account, arrives by email)
+2. Put it in `config.js`:
+```js
+const CARTO_API_KEY = "your_key";
+```
+
+No key? No problem — `light` / `dark` automatically fall back to Esri gray basemaps (no watermark, slightly different look).
+
 ### Deploy
 ```bash
 firebase deploy
